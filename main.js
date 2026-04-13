@@ -2,7 +2,7 @@ import "./main-enhanced.js";
 /*
 import { OrbitControls } from "./vendor/three/examples/jsm/controls/OrbitControls.js";
 
-const GRID = 4;
+const GRID = 8;
 const CELL = 1;
 const MAX_H = 8;
 const ORIGIN = new THREE.Vector3(

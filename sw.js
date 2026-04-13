@@ -1,4 +1,4 @@
-const CACHE = "harvest-orchard-v16";
+const CACHE = "harvest-orchard-v23";
 
 const PRECACHE_URLS = [
   "index.html",

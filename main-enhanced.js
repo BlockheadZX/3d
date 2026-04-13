@@ -10,12 +10,16 @@ if (bootDiagnostic) {
   bootDiagnostic.mark("js", "ok", "脚本已启动，正在准备 3D 场景。");
 }
 
-const GRID = 4;
+const GRID = 8;
 const CELL = 1;
 const MAX_H = 8;
 const MAX_HISTORY_ENTRIES = 36;
 const IS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 const TAP_PX = IS_COARSE_POINTER ? 22 : 14;
+/** 触控设备上，顶栏默认收起；含多数平板竖屏/横屏（旧版 iPad / Android 常用宽度） */
+const TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W = 1024;
+/** 警告/错误类底部提示至少显示时长，再恢复默认操作说明 */
+const FEEDBACK_WARN_ERROR_HIDE_MS = 3000;
 const DEFAULT_HINT =
   "先选主操作，再轻点 3D 画面。单指拖动换方向，双指捏合能看得更清楚。";
 
@@ -25,7 +29,8 @@ const ORIGIN = new THREE.Vector3(
   ((GRID - 1) * CELL) / 2
 );
 const DEFAULT_CAMERA_TARGET = ORIGIN.clone().add(new THREE.Vector3(0, 1.1, 0));
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(6.6, 5.2, 8.5);
+/** 略拉近，减少画面四周「空蓝天」占比 */
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(9.8, 5.6, 12.8);
 
 const PRESETS = {
   intro: {
@@ -40,10 +45,10 @@ const PRESETS = {
       { label: "说说发现", prompt: "说说发现：为什么正面像 3 箱，实际却有 4 箱？" },
     ],
     cells: [
-      [0, 0, 0],
-      [1, 0, 0],
-      [2, 0, 0],
-      [1, 0, 1],
+      [2, 0, 3],
+      [3, 0, 3],
+      [4, 0, 3],
+      [3, 0, 4],
     ],
     target: 4,
   },
@@ -73,12 +78,12 @@ const PRESETS = {
       { label: "说说发现", prompt: "说说发现：这张图纸为什么没有遮挡，看起来更容易数？" },
     ],
     cells: [
-      [0, 0, 0],
-      [1, 0, 0],
-      [2, 0, 0],
-      [0, 0, 1],
-      [1, 0, 1],
-      [2, 0, 1],
+      [2, 0, 3],
+      [3, 0, 3],
+      [4, 0, 3],
+      [2, 0, 4],
+      [3, 0, 4],
+      [4, 0, 4],
     ],
     target: 6,
     diagramBadge: "图纸一",
@@ -96,12 +101,12 @@ const PRESETS = {
       { label: "说说发现", prompt: "说说发现：这张图纸里，哪一箱最容易被忽略？" },
     ],
     cells: [
-      [0, 0, 0],
-      [1, 0, 0],
-      [2, 0, 0],
-      [0, 0, 1],
-      [1, 0, 1],
-      [1, 1, 0],
+      [2, 0, 3],
+      [3, 0, 3],
+      [4, 0, 3],
+      [2, 0, 4],
+      [3, 0, 4],
+      [3, 1, 3],
     ],
     target: 6,
     diagramBadge: "图纸二",
@@ -193,17 +198,18 @@ const state = {
   historyStack: [],
   teacherMode: false,
   researchPhase: 0,
-  topPanelCollapsed: IS_COARSE_POINTER && window.innerWidth <= 560,
+  topPanelCollapsed:
+    IS_COARSE_POINTER && window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W,
   toolSheetOpen: false,
 };
 
 const scene = new THREE.Scene();
 const SKY = 0x2b4e63;
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 14, 40);
+scene.fog = new THREE.Fog(SKY, 18, 58);
 
 const camera = new THREE.PerspectiveCamera(
-  48,
+  44,
   window.innerWidth / window.innerHeight,
   0.1,
   200
@@ -251,8 +257,8 @@ controls.target.copy(DEFAULT_CAMERA_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.enablePan = false;
-controls.minDistance = 5.2;
-controls.maxDistance = 18;
+controls.minDistance = 7;
+controls.maxDistance = 30;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.rotateSpeed = IS_COARSE_POINTER ? 0.92 : 1;
 controls.zoomSpeed = 0.95;
@@ -282,7 +288,8 @@ const fill = new THREE.DirectionalLight(0xb8d8ff, 0.42);
 fill.position.set(-6, 8, -10);
 scene.add(fill);
 
-const floorGeo = new THREE.PlaneGeometry(GRID * CELL + 6, GRID * CELL + 6);
+const floorPad = 0.28;
+const floorGeo = new THREE.PlaneGeometry(GRID * CELL + floorPad, GRID * CELL + floorPad);
 const floorMat = new THREE.MeshStandardMaterial({
   color: 0x24384d,
   roughness: 0.9,
@@ -290,6 +297,7 @@ const floorMat = new THREE.MeshStandardMaterial({
 });
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
+floor.position.set(ORIGIN.x, 0, ORIGIN.z);
 floor.receiveShadow = true;
 scene.add(floor);
 
@@ -304,7 +312,13 @@ scene.add(gridHelper);
 
 const boxGeo = new THREE.BoxGeometry(CELL * 0.92, CELL * 0.92, CELL * 0.92);
 const edgeGeo = new THREE.EdgesGeometry(boxGeo);
-const OUTLINE_COLOR = 0x5c3d28;
+const OUTLINE_COLOR = 0x4a3020;
+/** 透视：更透明 + 冷色自发光，线框提亮便于分辨前后层 */
+const XRAY_MESH_OPACITY = 0.2;
+const XRAY_MESH_EMISSIVE = 0x4a8cc8;
+const XRAY_MESH_EMISSIVE_INTENSITY = 0.48;
+const XRAY_LINE_OPACITY = 0.92;
+const XRAY_LINE_COLOR = 0xf0e0cc;
 const CARTOON_CRATE_HEX = [
   0xffb088,
   0xffe566,
@@ -313,6 +327,154 @@ const CARTOON_CRATE_HEX = [
   0x8fd4ff,
   0xe4b8ff,
 ];
+
+/** @type {{ side: THREE.CanvasTexture; top: THREE.CanvasTexture }[]} */
+const crateTextureCache = [];
+
+function hexToRgb(hex) {
+  const h = hex >>> 0;
+  return { r: (h >> 16) & 255, g: (h >> 8) & 255, b: h & 255 };
+}
+
+function makeCanvasTexture(canvas) {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  if ("colorSpace" in tex && THREE.SRGBColorSpace) {
+    tex.colorSpace = THREE.SRGBColorSpace;
+  }
+  return tex;
+}
+
+/** 侧面：木板条 + 钉眼 + 淡果色水漆感 */
+function buildCrateSideTexture(accentHex) {
+  const w = 160;
+  const h = 160;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  const { r: ar, g: ag, b: ab } = hexToRgb(accentHex);
+
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, "#e8d4b8");
+  bg.addColorStop(0.45, "#d2bc98");
+  bg.addColorStop(1, "#c4a882");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  for (let y = 6; y < h - 4; y += 20) {
+    ctx.fillStyle = "rgba(75, 52, 32, 0.38)";
+    ctx.fillRect(0, y, w, 3);
+    ctx.fillStyle = "rgba(140, 110, 72, 0.2)";
+    ctx.fillRect(0, y + 3, w, 17);
+  }
+
+  ctx.fillStyle = "rgba(55, 38, 22, 0.28)";
+  ctx.fillRect(0, 0, 5, h);
+  ctx.fillRect(w - 5, 0, 5, h);
+
+  ctx.fillStyle = `rgba(${ar},${ag},${ab},0.14)`;
+  ctx.fillRect(18, 52, w - 36, 48);
+
+  for (let i = 0; i < 18; i += 1) {
+    const px = 10 + (i % 6) * 26;
+    const py = 12 + Math.floor(i / 6) * 48;
+    ctx.fillStyle = "rgba(40, 28, 18, 0.35)";
+    ctx.beginPath();
+    ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return makeCanvasTexture(canvas);
+}
+
+/** 顶面：木板封条 + 中间「果区」色块，像装水果木箱 */
+function buildCrateTopTexture(accentHex) {
+  const w = 160;
+  const h = 160;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  const { r, g, b } = hexToRgb(accentHex);
+
+  ctx.fillStyle = "#d8c4a4";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = "rgba(90, 62, 38, 0.45)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i += 1) {
+    const o = 8 + i * 34;
+    ctx.strokeRect(o, o, w - o * 2, h - o * 2);
+  }
+
+  ctx.fillStyle = `rgb(${Math.min(255, r + 35)},${Math.min(255, g + 28)},${Math.min(255, b + 22)})`;
+  const cx = w / 2;
+  const cy = h / 2;
+  const rw = w * 0.38;
+  const rh = h * 0.32;
+  const x0 = cx - rw / 2;
+  const y0 = cy - rh / 2;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(x0, y0, rw, rh, 10);
+  } else {
+    ctx.rect(x0, y0, rw, rh);
+  }
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(60, 42, 26, 0.5)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(70, 48, 30, 0.35)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(12, h / 2);
+  ctx.lineTo(w - 12, h / 2);
+  ctx.stroke();
+
+  return makeCanvasTexture(canvas);
+}
+
+function getCrateTexturePair(colorIndex) {
+  if (!crateTextureCache[colorIndex]) {
+    const hex = CARTOON_CRATE_HEX[colorIndex % CARTOON_CRATE_HEX.length];
+    crateTextureCache[colorIndex] = {
+      side: buildCrateSideTexture(hex),
+      top: buildCrateTopTexture(hex),
+    };
+  }
+  return crateTextureCache[colorIndex];
+}
+
+/** 六面木箱材质（纹理共享，材质每箱 clone，便于透视与 dispose） */
+function createFruitCrateMaterials(gx, gy, gz) {
+  const colorIndex = (gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length;
+  const { side: sideMap, top: topMap } = getCrateTexturePair(colorIndex);
+
+  const wood = new THREE.MeshStandardMaterial({
+    map: sideMap,
+    roughness: 0.88,
+    metalness: 0.04,
+    envMapIntensity: 0.35,
+  });
+  const topM = new THREE.MeshStandardMaterial({
+    map: topMap,
+    roughness: 0.8,
+    metalness: 0.03,
+    envMapIntensity: 0.4,
+  });
+  const bottomM = new THREE.MeshStandardMaterial({
+    map: sideMap,
+    roughness: 0.94,
+    metalness: 0.02,
+    color: new THREE.Color(0x9c8a78),
+  });
+
+  const mats = [wood, wood, topM, bottomM, wood, wood];
+  return mats.map((m) => m.clone());
+}
 const DIAGRAM_FILLS = [
   "#ffb088",
   "#ffe566",
@@ -328,18 +490,6 @@ const pointer = new THREE.Vector2();
 const planeFloor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const worldNormal = new THREE.Vector3();
 let dragStart = null;
-
-function createCartoonCrateMaterial(gx, gy, gz) {
-  const hex = CARTOON_CRATE_HEX[(gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length];
-  const color = new THREE.Color(hex);
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.32,
-    metalness: 0.02,
-    emissive: color.clone(),
-    emissiveIntensity: 0.22,
-  });
-}
 
 function setStageStatus(message = "", tone = "info") {
   if (!stageStatus) return;
@@ -382,12 +532,16 @@ function restoreDefaultFeedback() {
 function showFeedback(text, tone = "info", duration = 2200) {
   setFeedbackText(text, tone);
   clearFeedbackTimer();
-  if (duration > 0) {
+  let hideAfter = duration;
+  if (duration > 0 && (tone === "warn" || tone === "error")) {
+    hideAfter = Math.max(duration, FEEDBACK_WARN_ERROR_HIDE_MS);
+  }
+  if (hideAfter > 0) {
     state.feedbackTimer = window.setTimeout(() => {
       if (!state.contextLost) {
         restoreDefaultFeedback();
       }
-    }, duration);
+    }, hideAfter);
   }
 }
 
@@ -432,11 +586,11 @@ function maybeCloseToolSheet() {
 }
 
 function isCompactTopPanelViewport() {
-  return window.innerWidth <= 560;
+  return window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W;
 }
 
 function syncTopPanelVisibility() {
-  const nextCollapsed = state.teacherMode ? false : state.topPanelCollapsed;
+  const nextCollapsed = state.topPanelCollapsed;
   topPanel?.classList.toggle("top-panel--collapsed", nextCollapsed);
   if (topPanel) {
     topPanel.hidden = nextCollapsed;
@@ -446,7 +600,7 @@ function syncTopPanelVisibility() {
   }
   if (btnTopPanelToggle) {
     const expanded = !nextCollapsed;
-    btnTopPanelToggle.hidden = state.teacherMode || nextCollapsed;
+    btnTopPanelToggle.hidden = nextCollapsed;
     btnTopPanelToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
     if (topPanelToggleLabelEl) {
       topPanelToggleLabelEl.textContent = "收起";
@@ -460,20 +614,18 @@ function syncTopPanelVisibility() {
     );
   }
   if (btnTopPanelSummary) {
-    btnTopPanelSummary.hidden = state.teacherMode || !nextCollapsed;
+    btnTopPanelSummary.hidden = !nextCollapsed;
     btnTopPanelSummary.setAttribute("aria-expanded", nextCollapsed ? "false" : "true");
   }
 }
 
 function setTopPanelCollapsed(collapsed) {
-  if (!state.teacherMode) {
-    state.topPanelCollapsed = collapsed;
-  }
+  state.topPanelCollapsed = collapsed;
   syncTopPanelVisibility();
 }
 
 function maybeCollapseTopPanel() {
-  if (isCompactTopPanelViewport() && !state.teacherMode) {
+  if (IS_COARSE_POINTER && isCompactTopPanelViewport() && !state.teacherMode) {
     setTopPanelCollapsed(true);
   }
 }
@@ -585,7 +737,9 @@ function setTeacherMode(enabled, { announce = true } = {}) {
   syncTopPanelVisibility();
   if (announce) {
     showFeedback(
-      enabled ? "教师模式已开启，可以切换任务、视角和研究步骤。" : "已回到幼儿模式，只保留核心操作。",
+      enabled
+        ? "教师模式已开启，可切换任务、视角和研究步骤；也可点「收起」腾出画面。"
+        : "已回到幼儿模式，只保留核心操作。",
       enabled ? "success" : "info",
       2200
     );
@@ -638,12 +792,47 @@ function setMode(nextMode, { announce = true } = {}) {
 }
 
 function applyXrayToGroup(group, enabled) {
-  group.traverse((object) => {
-    if (!object.isMesh || !object.material) return;
-    const material = object.material;
+  const applyMat = (material) => {
     material.transparent = enabled;
-    material.opacity = enabled ? 0.38 : 1;
+    material.opacity = enabled ? XRAY_MESH_OPACITY : 1;
     material.depthWrite = !enabled;
+    if (material.isMeshStandardMaterial) {
+      if (enabled) {
+        if (!material.userData.xraySaved) {
+          material.userData.xraySaved = {
+            emissive: material.emissive.clone(),
+            emissiveIntensity: material.emissiveIntensity,
+          };
+        }
+        material.emissive.setHex(XRAY_MESH_EMISSIVE);
+        material.emissiveIntensity = XRAY_MESH_EMISSIVE_INTENSITY;
+      } else if (material.userData.xraySaved) {
+        const saved = material.userData.xraySaved;
+        material.emissive.copy(saved.emissive);
+        material.emissiveIntensity = saved.emissiveIntensity;
+      }
+    }
+  };
+  group.traverse((object) => {
+    if (object.isLineSegments && object.material) {
+      const m = object.material;
+      m.transparent = true;
+      m.depthWrite = !enabled;
+      if (enabled) {
+        m.opacity = XRAY_LINE_OPACITY;
+        m.color.setHex(XRAY_LINE_COLOR);
+      } else {
+        m.opacity = 0.92;
+        m.color.setHex(OUTLINE_COLOR);
+      }
+      return;
+    }
+    if (!object.isMesh || !object.material) return;
+    if (Array.isArray(object.material)) {
+      object.material.forEach(applyMat);
+    } else {
+      applyMat(object.material);
+    }
   });
 }
 
@@ -774,7 +963,7 @@ function addCube(gx, gy, gz) {
 
   const key = keyOf(gx, gy, gz);
   const group = new THREE.Group();
-  const mesh = new THREE.Mesh(boxGeo, createCartoonCrateMaterial(gx, gy, gz));
+  const mesh = new THREE.Mesh(boxGeo, createFruitCrateMaterials(gx, gy, gz));
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.name = "cratePick";
@@ -1258,12 +1447,12 @@ function applyCameraView(view, { announce = true, animate = true } = {}) {
   const target = ORIGIN.clone().add(new THREE.Vector3(0, 1.1, 0));
   const views = {
     front: {
-      position: new THREE.Vector3(ORIGIN.x, 4.5, ORIGIN.z + 10.8),
+      position: new THREE.Vector3(ORIGIN.x, 5.2, ORIGIN.z + 12.5),
       target,
       message: "已切到正面，方便观察前后遮挡。",
     },
     side: {
-      position: new THREE.Vector3(ORIGIN.x + 10.4, 4.6, ORIGIN.z),
+      position: new THREE.Vector3(ORIGIN.x + 12.5, 5.2, ORIGIN.z),
       target,
       message: "已切到侧面，方便比较高低。",
     },

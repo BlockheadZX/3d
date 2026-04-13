@@ -18024,6 +18024,13 @@
       return this;
     }
   };
+  var CanvasTexture = class extends Texture {
+    constructor(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy) {
+      super(canvas2, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy);
+      this.isCanvasTexture = true;
+      this.needsUpdate = true;
+    }
+  };
   var _v0 = /* @__PURE__ */ new Vector3();
   var _v1$1 = /* @__PURE__ */ new Vector3();
   var _normal = /* @__PURE__ */ new Vector3();
@@ -20164,12 +20171,14 @@
   if (bootDiagnostic) {
     bootDiagnostic.mark("js", "ok", "\u811A\u672C\u5DF2\u542F\u52A8\uFF0C\u6B63\u5728\u51C6\u5907 3D \u573A\u666F\u3002");
   }
-  var GRID = 4;
+  var GRID = 8;
   var CELL = 1;
   var MAX_H = 8;
   var MAX_HISTORY_ENTRIES = 36;
   var IS_COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
   var TAP_PX = IS_COARSE_POINTER ? 22 : 14;
+  var TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W = 1024;
+  var FEEDBACK_WARN_ERROR_HIDE_MS = 3e3;
   var DEFAULT_HINT = "\u5148\u9009\u4E3B\u64CD\u4F5C\uFF0C\u518D\u8F7B\u70B9 3D \u753B\u9762\u3002\u5355\u6307\u62D6\u52A8\u6362\u65B9\u5411\uFF0C\u53CC\u6307\u634F\u5408\u80FD\u770B\u5F97\u66F4\u6E05\u695A\u3002";
   var ORIGIN = new Vector3(
     (GRID - 1) * CELL / 2,
@@ -20177,7 +20186,7 @@
     (GRID - 1) * CELL / 2
   );
   var DEFAULT_CAMERA_TARGET = ORIGIN.clone().add(new Vector3(0, 1.1, 0));
-  var DEFAULT_CAMERA_POSITION = new Vector3(6.6, 5.2, 8.5);
+  var DEFAULT_CAMERA_POSITION = new Vector3(9.8, 5.6, 12.8);
   var PRESETS = {
     intro: {
       name: "\u60C5\u5883\xB74\u7BB1\u906E\u6321",
@@ -20191,10 +20200,10 @@
         { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u4E3A\u4EC0\u4E48\u6B63\u9762\u50CF 3 \u7BB1\uFF0C\u5B9E\u9645\u5374\u6709 4 \u7BB1\uFF1F" }
       ],
       cells: [
-        [0, 0, 0],
-        [1, 0, 0],
-        [2, 0, 0],
-        [1, 0, 1]
+        [2, 0, 3],
+        [3, 0, 3],
+        [4, 0, 3],
+        [3, 0, 4]
       ],
       target: 4
     },
@@ -20224,12 +20233,12 @@
         { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u8FD9\u5F20\u56FE\u7EB8\u4E3A\u4EC0\u4E48\u6CA1\u6709\u906E\u6321\uFF0C\u770B\u8D77\u6765\u66F4\u5BB9\u6613\u6570\uFF1F" }
       ],
       cells: [
-        [0, 0, 0],
-        [1, 0, 0],
-        [2, 0, 0],
-        [0, 0, 1],
-        [1, 0, 1],
-        [2, 0, 1]
+        [2, 0, 3],
+        [3, 0, 3],
+        [4, 0, 3],
+        [2, 0, 4],
+        [3, 0, 4],
+        [4, 0, 4]
       ],
       target: 6,
       diagramBadge: "\u56FE\u7EB8\u4E00",
@@ -20247,12 +20256,12 @@
         { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u8FD9\u5F20\u56FE\u7EB8\u91CC\uFF0C\u54EA\u4E00\u7BB1\u6700\u5BB9\u6613\u88AB\u5FFD\u7565\uFF1F" }
       ],
       cells: [
-        [0, 0, 0],
-        [1, 0, 0],
-        [2, 0, 0],
-        [0, 0, 1],
-        [1, 0, 1],
-        [1, 1, 0]
+        [2, 0, 3],
+        [3, 0, 3],
+        [4, 0, 3],
+        [2, 0, 4],
+        [3, 0, 4],
+        [3, 1, 3]
       ],
       target: 6,
       diagramBadge: "\u56FE\u7EB8\u4E8C",
@@ -20340,15 +20349,15 @@
     historyStack: [],
     teacherMode: false,
     researchPhase: 0,
-    topPanelCollapsed: IS_COARSE_POINTER && window.innerWidth <= 560,
+    topPanelCollapsed: IS_COARSE_POINTER && window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W,
     toolSheetOpen: false
   };
   var scene = new Scene();
   var SKY = 2838115;
   scene.background = new Color(SKY);
-  scene.fog = new Fog(SKY, 14, 40);
+  scene.fog = new Fog(SKY, 18, 58);
   var camera = new PerspectiveCamera(
-    48,
+    44,
     window.innerWidth / window.innerHeight,
     0.1,
     200
@@ -20392,8 +20401,8 @@
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
-  controls.minDistance = 5.2;
-  controls.maxDistance = 18;
+  controls.minDistance = 7;
+  controls.maxDistance = 30;
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.rotateSpeed = IS_COARSE_POINTER ? 0.92 : 1;
   controls.zoomSpeed = 0.95;
@@ -20419,7 +20428,8 @@
   var fill = new DirectionalLight(12114175, 0.42);
   fill.position.set(-6, 8, -10);
   scene.add(fill);
-  var floorGeo = new PlaneGeometry(GRID * CELL + 6, GRID * CELL + 6);
+  var floorPad = 0.28;
+  var floorGeo = new PlaneGeometry(GRID * CELL + floorPad, GRID * CELL + floorPad);
   var floorMat = new MeshStandardMaterial({
     color: 2373709,
     roughness: 0.9,
@@ -20427,6 +20437,7 @@
   });
   var floor = new Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
+  floor.position.set(ORIGIN.x, 0, ORIGIN.z);
   floor.receiveShadow = true;
   scene.add(floor);
   var gridHelper = new GridHelper(
@@ -20439,7 +20450,12 @@
   scene.add(gridHelper);
   var boxGeo = new BoxGeometry(CELL * 0.92, CELL * 0.92, CELL * 0.92);
   var edgeGeo = new EdgesGeometry(boxGeo);
-  var OUTLINE_COLOR = 6044968;
+  var OUTLINE_COLOR = 4861984;
+  var XRAY_MESH_OPACITY = 0.2;
+  var XRAY_MESH_EMISSIVE = 4885704;
+  var XRAY_MESH_EMISSIVE_INTENSITY = 0.48;
+  var XRAY_LINE_OPACITY = 0.92;
+  var XRAY_LINE_COLOR = 15786188;
   var CARTOON_CRATE_HEX = [
     16756872,
     16770406,
@@ -20448,6 +20464,129 @@
     9426175,
     14989567
   ];
+  var crateTextureCache = [];
+  function hexToRgb(hex) {
+    const h = hex >>> 0;
+    return { r: h >> 16 & 255, g: h >> 8 & 255, b: h & 255 };
+  }
+  function makeCanvasTexture(canvas2) {
+    const tex = new CanvasTexture(canvas2);
+    tex.needsUpdate = true;
+    if ("colorSpace" in tex && SRGBColorSpace) {
+      tex.colorSpace = SRGBColorSpace;
+    }
+    return tex;
+  }
+  function buildCrateSideTexture(accentHex) {
+    const w = 160;
+    const h = 160;
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    const { r: ar, g: ag, b: ab } = hexToRgb(accentHex);
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, "#e8d4b8");
+    bg.addColorStop(0.45, "#d2bc98");
+    bg.addColorStop(1, "#c4a882");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    for (let y = 6; y < h - 4; y += 20) {
+      ctx.fillStyle = "rgba(75, 52, 32, 0.38)";
+      ctx.fillRect(0, y, w, 3);
+      ctx.fillStyle = "rgba(140, 110, 72, 0.2)";
+      ctx.fillRect(0, y + 3, w, 17);
+    }
+    ctx.fillStyle = "rgba(55, 38, 22, 0.28)";
+    ctx.fillRect(0, 0, 5, h);
+    ctx.fillRect(w - 5, 0, 5, h);
+    ctx.fillStyle = `rgba(${ar},${ag},${ab},0.14)`;
+    ctx.fillRect(18, 52, w - 36, 48);
+    for (let i = 0; i < 18; i += 1) {
+      const px = 10 + i % 6 * 26;
+      const py = 12 + Math.floor(i / 6) * 48;
+      ctx.fillStyle = "rgba(40, 28, 18, 0.35)";
+      ctx.beginPath();
+      ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return makeCanvasTexture(canvas2);
+  }
+  function buildCrateTopTexture(accentHex) {
+    const w = 160;
+    const h = 160;
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    const { r, g, b } = hexToRgb(accentHex);
+    ctx.fillStyle = "#d8c4a4";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(90, 62, 38, 0.45)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i += 1) {
+      const o = 8 + i * 34;
+      ctx.strokeRect(o, o, w - o * 2, h - o * 2);
+    }
+    ctx.fillStyle = `rgb(${Math.min(255, r + 35)},${Math.min(255, g + 28)},${Math.min(255, b + 22)})`;
+    const cx = w / 2;
+    const cy = h / 2;
+    const rw = w * 0.38;
+    const rh = h * 0.32;
+    const x0 = cx - rw / 2;
+    const y0 = cy - rh / 2;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x0, y0, rw, rh, 10);
+    } else {
+      ctx.rect(x0, y0, rw, rh);
+    }
+    ctx.fill();
+    ctx.strokeStyle = "rgba(60, 42, 26, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(70, 48, 30, 0.35)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(12, h / 2);
+    ctx.lineTo(w - 12, h / 2);
+    ctx.stroke();
+    return makeCanvasTexture(canvas2);
+  }
+  function getCrateTexturePair(colorIndex) {
+    if (!crateTextureCache[colorIndex]) {
+      const hex = CARTOON_CRATE_HEX[colorIndex % CARTOON_CRATE_HEX.length];
+      crateTextureCache[colorIndex] = {
+        side: buildCrateSideTexture(hex),
+        top: buildCrateTopTexture(hex)
+      };
+    }
+    return crateTextureCache[colorIndex];
+  }
+  function createFruitCrateMaterials(gx, gy, gz) {
+    const colorIndex = (gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length;
+    const { side: sideMap, top: topMap } = getCrateTexturePair(colorIndex);
+    const wood = new MeshStandardMaterial({
+      map: sideMap,
+      roughness: 0.88,
+      metalness: 0.04,
+      envMapIntensity: 0.35
+    });
+    const topM = new MeshStandardMaterial({
+      map: topMap,
+      roughness: 0.8,
+      metalness: 0.03,
+      envMapIntensity: 0.4
+    });
+    const bottomM = new MeshStandardMaterial({
+      map: sideMap,
+      roughness: 0.94,
+      metalness: 0.02,
+      color: new Color(10259064)
+    });
+    const mats = [wood, wood, topM, bottomM, wood, wood];
+    return mats.map((m) => m.clone());
+  }
   var DIAGRAM_FILLS = [
     "#ffb088",
     "#ffe566",
@@ -20462,17 +20601,6 @@
   var planeFloor = new Plane(new Vector3(0, 1, 0), 0);
   var worldNormal = new Vector3();
   var dragStart = null;
-  function createCartoonCrateMaterial(gx, gy, gz) {
-    const hex = CARTOON_CRATE_HEX[(gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length];
-    const color = new Color(hex);
-    return new MeshStandardMaterial({
-      color,
-      roughness: 0.32,
-      metalness: 0.02,
-      emissive: color.clone(),
-      emissiveIntensity: 0.22
-    });
-  }
   function setStageStatus(message = "", tone = "info") {
     if (!stageStatus) return;
     stageStatus.hidden = !message;
@@ -20506,12 +20634,16 @@
   function showFeedback(text, tone = "info", duration = 2200) {
     setFeedbackText(text, tone);
     clearFeedbackTimer();
-    if (duration > 0) {
+    let hideAfter = duration;
+    if (duration > 0 && (tone === "warn" || tone === "error")) {
+      hideAfter = Math.max(duration, FEEDBACK_WARN_ERROR_HIDE_MS);
+    }
+    if (hideAfter > 0) {
       state.feedbackTimer = window.setTimeout(() => {
         if (!state.contextLost) {
           restoreDefaultFeedback();
         }
-      }, duration);
+      }, hideAfter);
     }
   }
   function clearResetConfirm() {
@@ -20551,10 +20683,10 @@
     }
   }
   function isCompactTopPanelViewport() {
-    return window.innerWidth <= 560;
+    return window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W;
   }
   function syncTopPanelVisibility() {
-    const nextCollapsed = state.teacherMode ? false : state.topPanelCollapsed;
+    const nextCollapsed = state.topPanelCollapsed;
     topPanel == null ? void 0 : topPanel.classList.toggle("top-panel--collapsed", nextCollapsed);
     if (topPanel) {
       topPanel.hidden = nextCollapsed;
@@ -20564,7 +20696,7 @@
     }
     if (btnTopPanelToggle) {
       const expanded = !nextCollapsed;
-      btnTopPanelToggle.hidden = state.teacherMode || nextCollapsed;
+      btnTopPanelToggle.hidden = nextCollapsed;
       btnTopPanelToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
       if (topPanelToggleLabelEl) {
         topPanelToggleLabelEl.textContent = "\u6536\u8D77";
@@ -20576,18 +20708,16 @@
       );
     }
     if (btnTopPanelSummary) {
-      btnTopPanelSummary.hidden = state.teacherMode || !nextCollapsed;
+      btnTopPanelSummary.hidden = !nextCollapsed;
       btnTopPanelSummary.setAttribute("aria-expanded", nextCollapsed ? "false" : "true");
     }
   }
   function setTopPanelCollapsed(collapsed) {
-    if (!state.teacherMode) {
-      state.topPanelCollapsed = collapsed;
-    }
+    state.topPanelCollapsed = collapsed;
     syncTopPanelVisibility();
   }
   function maybeCollapseTopPanel() {
-    if (isCompactTopPanelViewport() && !state.teacherMode) {
+    if (IS_COARSE_POINTER && isCompactTopPanelViewport() && !state.teacherMode) {
       setTopPanelCollapsed(true);
     }
   }
@@ -20687,7 +20817,7 @@
     syncTopPanelVisibility();
     if (announce) {
       showFeedback(
-        enabled ? "\u6559\u5E08\u6A21\u5F0F\u5DF2\u5F00\u542F\uFF0C\u53EF\u4EE5\u5207\u6362\u4EFB\u52A1\u3001\u89C6\u89D2\u548C\u7814\u7A76\u6B65\u9AA4\u3002" : "\u5DF2\u56DE\u5230\u5E7C\u513F\u6A21\u5F0F\uFF0C\u53EA\u4FDD\u7559\u6838\u5FC3\u64CD\u4F5C\u3002",
+        enabled ? "\u6559\u5E08\u6A21\u5F0F\u5DF2\u5F00\u542F\uFF0C\u53EF\u5207\u6362\u4EFB\u52A1\u3001\u89C6\u89D2\u548C\u7814\u7A76\u6B65\u9AA4\uFF1B\u4E5F\u53EF\u70B9\u300C\u6536\u8D77\u300D\u817E\u51FA\u753B\u9762\u3002" : "\u5DF2\u56DE\u5230\u5E7C\u513F\u6A21\u5F0F\uFF0C\u53EA\u4FDD\u7559\u6838\u5FC3\u64CD\u4F5C\u3002",
         enabled ? "success" : "info",
         2200
       );
@@ -20733,12 +20863,47 @@
     }
   }
   function applyXrayToGroup(group, enabled) {
-    group.traverse((object) => {
-      if (!object.isMesh || !object.material) return;
-      const material = object.material;
+    const applyMat = (material) => {
       material.transparent = enabled;
-      material.opacity = enabled ? 0.38 : 1;
+      material.opacity = enabled ? XRAY_MESH_OPACITY : 1;
       material.depthWrite = !enabled;
+      if (material.isMeshStandardMaterial) {
+        if (enabled) {
+          if (!material.userData.xraySaved) {
+            material.userData.xraySaved = {
+              emissive: material.emissive.clone(),
+              emissiveIntensity: material.emissiveIntensity
+            };
+          }
+          material.emissive.setHex(XRAY_MESH_EMISSIVE);
+          material.emissiveIntensity = XRAY_MESH_EMISSIVE_INTENSITY;
+        } else if (material.userData.xraySaved) {
+          const saved = material.userData.xraySaved;
+          material.emissive.copy(saved.emissive);
+          material.emissiveIntensity = saved.emissiveIntensity;
+        }
+      }
+    };
+    group.traverse((object) => {
+      if (object.isLineSegments && object.material) {
+        const m = object.material;
+        m.transparent = true;
+        m.depthWrite = !enabled;
+        if (enabled) {
+          m.opacity = XRAY_LINE_OPACITY;
+          m.color.setHex(XRAY_LINE_COLOR);
+        } else {
+          m.opacity = 0.92;
+          m.color.setHex(OUTLINE_COLOR);
+        }
+        return;
+      }
+      if (!object.isMesh || !object.material) return;
+      if (Array.isArray(object.material)) {
+        object.material.forEach(applyMat);
+      } else {
+        applyMat(object.material);
+      }
     });
   }
   function setXray(enabled, { announce = true } = {}) {
@@ -20849,7 +21014,7 @@
     }
     const key = keyOf(gx, gy, gz);
     const group = new Group();
-    const mesh = new Mesh(boxGeo, createCartoonCrateMaterial(gx, gy, gz));
+    const mesh = new Mesh(boxGeo, createFruitCrateMaterials(gx, gy, gz));
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.name = "cratePick";
@@ -21282,12 +21447,12 @@
     const target = ORIGIN.clone().add(new Vector3(0, 1.1, 0));
     const views = {
       front: {
-        position: new Vector3(ORIGIN.x, 4.5, ORIGIN.z + 10.8),
+        position: new Vector3(ORIGIN.x, 5.2, ORIGIN.z + 12.5),
         target,
         message: "\u5DF2\u5207\u5230\u6B63\u9762\uFF0C\u65B9\u4FBF\u89C2\u5BDF\u524D\u540E\u906E\u6321\u3002"
       },
       side: {
-        position: new Vector3(ORIGIN.x + 10.4, 4.6, ORIGIN.z),
+        position: new Vector3(ORIGIN.x + 12.5, 5.2, ORIGIN.z),
         target,
         message: "\u5DF2\u5207\u5230\u4FA7\u9762\uFF0C\u65B9\u4FBF\u6BD4\u8F83\u9AD8\u4F4E\u3002"
       },
