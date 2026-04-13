@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "丰收的果园 · 3D仓库观察窗",
+  "short_name": "3D仓库",
+  "description": "中班数学：立体堆放与遮挡教学演示",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#152028",
+  "theme_color": "#152028",
+  "icons": [
+    {
+      "src": "icons/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#152028" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="3D仓库" />
+    <title>丰收的果园 · 3D仓库观察窗</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/app-icon.png" />
+    <link rel="apple-touch-icon" href="./icons/app-icon.png" />
+    <link rel="stylesheet" href="./styles.css" id="appStylesheet" />
+    <style>
+      .boot-diagnostic {
+        position: fixed;
+        top: max(10px, env(safe-area-inset-top, 0px) + 6px);
+        left: max(10px, env(safe-area-inset-left, 0px) + 6px);
+        right: max(10px, env(safe-area-inset-right, 0px) + 6px);
+        z-index: 120;
+        display: grid;
+        gap: 8px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(9, 14, 22, 0.88);
+        color: #f5f8fc;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .boot-diagnostic.is-hidden {
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+      }
+
+      .boot-diagnostic[hidden] {
+        display: none !important;
+      }
+
+      .boot-diagnostic[data-tone="error"] {
+        background: rgba(94, 28, 42, 0.94);
+        border-color: rgba(255, 184, 195, 0.28);
+      }
+
+      .boot-diagnostic[data-tone="warn"] {
+        background: rgba(88, 55, 14, 0.94);
+        border-color: rgba(255, 214, 138, 0.28);
+      }
+
+      .boot-diagnostic[data-tone="success"] {
+        background: rgba(18, 74, 54, 0.94);
+        border-color: rgba(169, 238, 209, 0.28);
+      }
+
+      .boot-diagnostic__title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        line-height: 1.3;
+      }
+
+      .boot-diagnostic__text {
+        font-size: 0.82rem;
+        line-height: 1.45;
+        color: rgba(245, 248, 252, 0.88);
+      }
+
+      .boot-diagnostic__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .boot-diagnostic__chip {
+        min-height: 28px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(244, 247, 252, 0.94);
+        font-size: 0.76rem;
+        line-height: 1.1;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .boot-diagnostic__chip[data-state="ok"] {
+        background: rgba(73, 162, 120, 0.18);
+        border-color: rgba(126, 224, 179, 0.24);
+      }
+
+      .boot-diagnostic__chip[data-state="error"] {
+        background: rgba(212, 85, 108, 0.18);
+        border-color: rgba(255, 174, 189, 0.24);
+      }
+
+      .boot-diagnostic__chip[data-state="pending"] {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      @media (min-width: 720px) {
+        .boot-diagnostic {
+          left: max(12px, env(safe-area-inset-left, 0px) + 8px);
+          right: auto;
+          width: min(480px, calc(100vw - 24px));
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        var state = {
+          css: "pending",
+          js: "pending",
+          webgl: "pending",
+        };
+        var hideTimer = 0;
+        var watchdogTimer = 0;
+
+        function getById(id) {
+          return document.getElementById(id);
+        }
+
+        function chipText(part) {
+          var labelMap = {
+            css: "样式",
+            js: "脚本",
+            webgl: "3D",
+          };
+          var valueMap = {
+            pending: "检查中",
+            ok: "正常",
+            error: "失败",
+          };
+          return labelMap[part] + "：" + valueMap[state[part]];
+        }
+
+        function snapshot() {
+          if (state.css === "error") {
+            return {
+              tone: "error",
+              title: "样式文件没有正常加载",
+              text: state.cssDetail || "请检查 styles.css 是否上传完整，或清理旧缓存后重试。",
+              autoHide: false,
+            };
+          }
+          if (state.js === "error") {
+            return {
+              tone: "error",
+              title: "脚本没有正常启动",
+              text: state.jsDetail || "请检查 file-bundle.js 或 main-enhanced.js 是否上传完整。",
+              autoHide: false,
+            };
+          }
+          if (state.webgl === "error") {
+            return {
+              tone: "error",
+              title: "3D 画面没有正常启动",
+              text: state.webglDetail || "浏览器暂时没能启动 3D，请换 Safari / Chrome 或重新打开页面。",
+              autoHide: false,
+            };
+          }
+          if (state.css === "ok" && state.js === "ok" && state.webgl === "ok") {
+            return {
+              tone: "success",
+              title: "页面已加载完成",
+              text: "样式、脚本和 3D 画面都已准备好。",
+              autoHide: true,
+            };
+          }
+          if (state.js === "ok" && state.webgl === "pending") {
+            return {
+              tone: "warn",
+              title: "脚本已启动，正在打开 3D",
+              text: "如果长时间停留在这里，通常是 WebGL 或设备兼容问题。",
+              autoHide: false,
+            };
+          }
+          if (state.css === "ok" && state.js === "pending") {
+            return {
+              tone: "warn",
+              title: "样式已加载，正在启动脚本",
+              text: "如果几秒后仍没有变化，请检查 file-bundle.js 缓存或重新部署。",
+              autoHide: false,
+            };
+          }
+          return {
+            tone: "info",
+            title: "正在检查页面资源",
+            text: "正在加载样式、脚本和 3D 画面……",
+            autoHide: false,
+          };
+        }
+
+        function render() {
+          var panel = getById("bootDiagnostic");
+          if (!panel) return;
+
+          var info = snapshot();
+          panel.hidden = false;
+          panel.setAttribute("data-tone", info.tone);
+          panel.classList.remove("is-hidden");
+
+          var title = getById("bootDiagnosticTitle");
+          var text = getById("bootDiagnosticText");
+          if (title) title.textContent = info.title;
+          if (text) text.textContent = info.text;
+
+          var cssChip = getById("bootDiagnosticCss");
+          var jsChip = getById("bootDiagnosticJs");
+          var webglChip = getById("bootDiagnosticWebgl");
+          if (cssChip) {
+            cssChip.textContent = chipText("css");
+            cssChip.setAttribute("data-state", state.css);
+          }
+          if (jsChip) {
+            jsChip.textContent = chipText("js");
+            jsChip.setAttribute("data-state", state.js);
+          }
+          if (webglChip) {
+            webglChip.textContent = chipText("webgl");
+            webglChip.setAttribute("data-state", state.webgl);
+          }
+
+          if (hideTimer) {
+            window.clearTimeout(hideTimer);
+            hideTimer = 0;
+          }
+          if (info.autoHide) {
+            hideTimer = window.setTimeout(function () {
+              panel.classList.add("is-hidden");
+            }, 1600);
+          }
+        }
+
+        function mark(part, value, detail) {
+          state[part] = value;
+          if (detail) {
+            state[part + "Detail"] = detail;
+          }
+          render();
+        }
+
+        function installStylesheetWatch() {
+          var link = getById("appStylesheet");
+          if (!link) return;
+          if (link.sheet) {
+            mark("css", "ok", "样式文件已加载。");
+          }
+          link.addEventListener("load", function () {
+            mark("css", "ok", "样式文件已加载。");
+          });
+          link.addEventListener("error", function () {
+            mark("css", "error", "styles.css 没有加载成功，请检查上传路径或缓存。");
+          });
+        }
+
+        function installWatchdog() {
+          if (watchdogTimer) {
+            window.clearTimeout(watchdogTimer);
+          }
+          watchdogTimer = window.setTimeout(function () {
+            if (state.css === "pending") {
+              mark("css", "error", "样式文件没有按时加载，请检查 styles.css 是否上传完整。");
+              return;
+            }
+            if (state.js !== "ok") {
+              mark("js", "error", "脚本没有正常启动，请检查 file-bundle.js 缓存或重新部署。");
+              return;
+            }
+            if (state.webgl !== "ok") {
+              mark("webgl", "error", "3D 画面没有正常启动，可能是 WebGL 受限或设备兼容问题。");
+            }
+          }, 5200);
+        }
+
+        window.__bootDiagnostic = {
+          mark: mark,
+          render: render,
+        };
+
+        document.addEventListener("DOMContentLoaded", render);
+        window.addEventListener("load", function () {
+          var link = getById("appStylesheet");
+          if (state.css === "pending" && link && link.sheet) {
+            mark("css", "ok", "样式文件已加载。");
+          }
+          installWatchdog();
+        });
+
+        window.addEventListener(
+          "error",
+          function (event) {
+            var target = event.target || event.srcElement;
+            if (target && target.tagName === "LINK" && target.id === "appStylesheet") {
+              mark("css", "error", "styles.css 没有加载成功，请检查上传路径或缓存。");
+              return;
+            }
+            if (
+              target &&
+              target.tagName === "SCRIPT" &&
+              target.getAttribute("data-app-entry") === "true"
+            ) {
+              mark("js", "error", "脚本文件没有加载成功，请检查 file-bundle.js 或 main-enhanced.js。");
+              return;
+            }
+            if (state.js !== "ok" && event.message) {
+              mark("js", "error", "脚本执行时报错：" + event.message);
+            }
+          },
+          true
+        );
+
+        window.addEventListener(
+          "unhandledrejection",
+          function () {
+            if (state.js === "ok" && state.webgl !== "ok") {
+              mark("webgl", "error", "3D 初始化过程中出现异常，请重新打开页面。");
+              return;
+            }
+            if (state.js !== "ok") {
+              mark("js", "error", "脚本启动过程中出现异常，请清理缓存后重试。");
+            }
+          },
+          true
+        );
+
+        installStylesheetWatch();
+        installWatchdog();
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="bootDiagnostic" class="boot-diagnostic" role="status" aria-live="polite">
+      <div class="boot-diagnostic__title" id="bootDiagnosticTitle">正在检查页面资源</div>
+      <div class="boot-diagnostic__text" id="bootDiagnosticText">
+        正在加载样式、脚本和 3D 画面……
+      </div>
+      <div class="boot-diagnostic__chips">
+        <span class="boot-diagnostic__chip" id="bootDiagnosticCss" data-state="pending">
+          样式：检查中
+        </span>
+        <span class="boot-diagnostic__chip" id="bootDiagnosticJs" data-state="pending">
+          脚本：检查中
+        </span>
+        <span class="boot-diagnostic__chip" id="bootDiagnosticWebgl" data-state="pending">
+          3D：检查中
+        </span>
+      </div>
+    </div>
+    <div id="app">
+      <div id="stageWrap" class="stage-wrap">
+        <canvas id="c"></canvas>
+        <button
+          type="button"
+          class="stage-exit"
+          id="btn-exit-stage-fullscreen"
+          hidden
+          aria-label="退出堆箱全屏"
+        >
+          退出全屏
+        </button>
+        <div class="stage-status" id="stageStatus" hidden role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="overlay">
+        <div class="overlay__top" id="overlayTop">
+          <button
+            type="button"
+            class="top-panel__summary"
+            id="btn-top-panel-summary"
+            aria-expanded="false"
+            aria-controls="topPanelShell"
+            aria-label="展开左上角说明与步骤"
+            hidden
+          >
+            <svg
+              class="top-panel__summary-arrow"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M7 10l5 5 5-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="top-panel__summary-badge" id="topPanelSummaryBadge"></span>
+            <span class="top-panel__summary-text" id="topPanelSummaryText"></span>
+          </button>
+          <header class="top-panel" id="topPanelShell">
+            <div class="top-panel__head">
+              <div class="top-panel__identity">
+                <p class="top-panel__eyebrow">丰收的果园 · 空间研究</p>
+                <h1>立体遮挡研究台</h1>
+                <p class="subtitle">大班幼儿探索前后遮挡、高低比较与立体搭建</p>
+              </div>
+              <div class="top-panel__actions">
+                <button
+                  type="button"
+                  class="teacher-toggle"
+                  id="btn-teacher-mode"
+                  aria-pressed="false"
+                >
+                  教师模式
+                </button>
+                <button
+                  type="button"
+                  class="top-panel__toggle"
+                  id="btn-top-panel-toggle"
+                  aria-expanded="true"
+                  aria-controls="topPanelDetails"
+                  title="收起左上角说明与步骤"
+                >
+                  <svg
+                    class="top-panel__toggle-icon"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="M18 15l-6-6-6 6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="top-panel__toggle-label" id="topPanelToggleLabel">收起</span>
+                </button>
+              </div>
+            </div>
+            <div class="top-panel__details" id="topPanelDetails">
+              <section class="research-panel" aria-label="研究流程">
+                <div class="research-panel__bar">
+                  <span class="research-phase-badge" id="researchPhaseBadge"></span>
+                  <button type="button" class="phase-next" id="btn-phase-next" hidden>
+                    下一步
+                  </button>
+                </div>
+                <p class="task-line" id="researchTask"></p>
+                <div class="research-steps" id="researchSteps" aria-live="polite"></div>
+              </section>
+              <div class="top-panel__meta" aria-live="polite">
+                <span class="meta-chip">当前箱数 <strong id="count">0</strong></span>
+                <span class="meta-chip meta-chip--soft" id="targetLine"></span>
+              </div>
+              <p class="hint" id="hint">
+                单指拖动画布旋转仓库；双指可缩放。点选格面放箱，点「拆除」后再点箱子可移除。
+              </p>
+            </div>
+          </header>
+
+          <aside class="sheet-panel" id="sheetPanel" hidden aria-label="示例搭建图纸">
+            <div class="sheet-panel__bar">
+              <span class="sheet-panel__title">示例图纸</span>
+              <span class="sheet-panel__badge" id="sheetPanelBadge"></span>
+            </div>
+            <p class="sheet-panel__caption" id="sheetPanelCaption"></p>
+            <div class="sheet-panel__diagram" id="sheetPanelDiagram"></div>
+            <p class="sheet-panel__foot">
+              俯视图说明：格内数字＝这一摞有几箱；虚线格表示不放箱子。
+            </p>
+          </aside>
+        </div>
+
+        <div class="dock">
+          <p class="dock__feedback" id="feedback" role="status" aria-live="polite"></p>
+          <div class="control-bar">
+            <div class="mode-switch" role="group" aria-label="操作模式">
+              <button
+                type="button"
+                class="btn btn-mode toggle btn--dock-icon"
+                id="btn-place"
+                aria-pressed="true"
+                aria-label="放箱子"
+                title="放箱子"
+              >
+                <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M5 10h14v9H5z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M5 10l7-3 7 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <path d="M12 12v4M10 14h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="btn btn-mode toggle btn--dock-icon"
+                id="btn-remove"
+                aria-pressed="false"
+                aria-label="拿箱子"
+                title="拿箱子"
+              >
+                <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M5 10h14v9H5z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M5 10l7-3 7 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <path d="M9 14h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn btn-undo btn--dock-icon"
+              id="btn-undo"
+              disabled
+              aria-label="撤回上一步"
+              title="撤回上一步"
+            >
+              <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <polyline
+                  points="9 10 4 15 9 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 15h11.5a4.5 4.5 0 1 0 0-9H13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="btn btn-clear btn--dock-icon"
+              id="btn-clear"
+              aria-label="清空所有箱子"
+              title="清空所有箱子（不改变当前情境，可撤回）"
+            >
+              <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <path
+                  d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6m4-6v6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="btn btn-tools btn--dock-icon"
+              id="btn-tools"
+              aria-expanded="false"
+              aria-controls="toolSheet"
+              aria-label="研究工具"
+              title="研究工具"
+              hidden
+            >
+              <svg
+                class="btn__dock-svg btn-tools__glyph btn-tools__glyph--when-closed"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <line x1="3" y1="7" x2="21" y2="7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="9" cy="7" r="2.5" fill="currentColor" />
+                <line x1="3" y1="12" x2="21" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="15" cy="12" r="2.5" fill="currentColor" />
+                <line x1="3" y1="17" x2="21" y2="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="7" cy="17" r="2.5" fill="currentColor" />
+              </svg>
+              <svg
+                class="btn__dock-svg btn-tools__glyph btn-tools__glyph--when-open"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M18 15l-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <section class="tool-sheet" id="toolSheet" hidden aria-label="研究工具面板">
+            <div class="tool-sheet__head">
+              <div>
+                <p class="tool-sheet__eyebrow">切换任务与观察方式</p>
+                <strong class="tool-sheet__title">研究工具</strong>
+              </div>
+              <button
+                type="button"
+                class="tool-sheet__close"
+                id="btn-close-tools"
+                aria-label="收起研究工具"
+              >
+                收起
+              </button>
+            </div>
+            <p class="dock__ops-tip">
+              先选主操作，再轻点 3D 画面。单指拖动能转动仓库，双指捏合能放大缩小。
+            </p>
+            <nav class="dock__nav" aria-label="教学操作">
+              <div class="toolbar-scroll">
+                <div class="group">
+                  <span class="group-label">研究任务</span>
+                  <div class="group__btns">
+                    <button type="button" class="btn primary" data-scene="intro">
+                      情境·4箱遮挡
+                    </button>
+                    <button type="button" class="btn" data-scene="free">清空·自由堆</button>
+                    <button type="button" class="btn" data-scene="sheet1">图纸一·6箱</button>
+                    <button type="button" class="btn" data-scene="sheet2">图纸二·6箱</button>
+                  </div>
+                </div>
+                <div class="group">
+                  <span class="group-label">观察视角</span>
+                  <div class="group__btns">
+                    <button type="button" class="btn" id="btn-front">正视</button>
+                    <button type="button" class="btn" id="btn-side">侧视</button>
+                    <button type="button" class="btn" id="btn-freecam">自由视角</button>
+                  </div>
+                </div>
+                <div class="group group--actions">
+                  <span class="group-label">辅助工具</span>
+                  <div class="group__btns group__btns--actions">
+                    <button type="button" class="btn" id="btn-xray" aria-pressed="false">
+                      打开透视
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-fullscreen"
+                      id="btn-fullscreen"
+                      aria-pressed="false"
+                    >
+                      堆箱全屏
+                    </button>
+                    <button type="button" class="btn danger" id="btn-reset">重置本关</button>
+                  </div>
+                </div>
+              </div>
+            </nav>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!--
+      默认 file-bundle.js：单文件打包 Three，避免 vendor/*.js 被当成 HTML（MIME 报错、箱子不渲染）。
+      需要直接改 main-enhanced.js 并即时刷新时，在地址栏加 ?module=1（服务器须正确提供 vendor 下的 .js）。
+    -->
+    <script>
+      (function () {
+        var script = document.createElement("script");
+        var isFile = window.location.protocol === "file:";
+        var forceModule = /(?:^|[?&])module=1(?:&|$)/.test(window.location.search);
+        var useModule = !isFile && forceModule;
+        script.setAttribute("data-app-entry", "true");
+        script.addEventListener("error", function () {
+          if (window.__bootDiagnostic && typeof window.__bootDiagnostic.mark === "function") {
+            window.__bootDiagnostic.mark(
+              "js",
+              "error",
+              useModule
+                ? "main-enhanced.js 没有加载成功，请检查部署路径。"
+                : "file-bundle.js 没有加载成功，请检查部署路径或缓存。"
+            );
+          }
+        });
+        if (useModule) {
+          script.type = "module";
+          script.src = "./main-enhanced.js";
+        } else {
+          script.defer = true;
+          script.src = "./file-bundle.js";
+        }
+        document.body.appendChild(script);
+      })();
+    </script>
+    <script>
+      if (
+        "serviceWorker" in navigator &&
+        window.isSecureContext
+      ) {
+        navigator.serviceWorker
+          .register("./sw.js", { scope: "./" })
+          .catch(function () {});
+      }
+    </script>
+  </body>
+</html>

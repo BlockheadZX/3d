@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#152028" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="3D仓库" />
+    <title>丰收的果园 · 3D仓库观察窗</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/app-icon.png" />
+    <link rel="apple-touch-icon" href="./icons/app-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="stageWrap" class="stage-wrap">
+        <canvas id="c"></canvas>
+        <button
+          type="button"
+          class="stage-exit"
+          id="btn-exit-stage-fullscreen"
+          hidden
+          aria-label="退出堆箱全屏"
+        >
+          退出全屏
+        </button>
+        <div class="stage-status" id="stageStatus" hidden role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="overlay">
+        <div class="overlay__top" id="overlayTop">
+          <button
+            type="button"
+            class="top-panel__summary"
+            id="btn-top-panel-summary"
+            aria-expanded="false"
+            aria-controls="topPanelShell"
+            aria-label="展开左上角说明与步骤"
+            hidden
+          >
+            <svg
+              class="top-panel__summary-arrow"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M7 10l5 5 5-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="top-panel__summary-badge" id="topPanelSummaryBadge"></span>
+            <span class="top-panel__summary-text" id="topPanelSummaryText"></span>
+          </button>
+          <header class="top-panel" id="topPanelShell">
+            <div class="top-panel__head">
+              <div class="top-panel__identity">
+                <p class="top-panel__eyebrow">丰收的果园 · 空间研究</p>
+                <h1>立体遮挡研究台</h1>
+                <p class="subtitle">大班幼儿探索前后遮挡、高低比较与立体搭建</p>
+              </div>
+              <div class="top-panel__actions">
+                <button
+                  type="button"
+                  class="teacher-toggle"
+                  id="btn-teacher-mode"
+                  aria-pressed="false"
+                >
+                  教师模式
+                </button>
+                <button
+                  type="button"
+                  class="top-panel__toggle"
+                  id="btn-top-panel-toggle"
+                  aria-expanded="true"
+                  aria-controls="topPanelDetails"
+                  title="收起左上角说明与步骤"
+                >
+                  <svg
+                    class="top-panel__toggle-icon"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="M18 15l-6-6-6 6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="top-panel__toggle-label" id="topPanelToggleLabel">收起</span>
+                </button>
+              </div>
+            </div>
+            <div class="top-panel__details" id="topPanelDetails">
+              <section class="research-panel" aria-label="研究流程">
+                <div class="research-panel__bar">
+                  <span class="research-phase-badge" id="researchPhaseBadge"></span>
+                  <button type="button" class="phase-next" id="btn-phase-next" hidden>
+                    下一步
+                  </button>
+                </div>
+                <p class="task-line" id="researchTask"></p>
+                <div class="research-steps" id="researchSteps" aria-live="polite"></div>
+              </section>
+              <div class="top-panel__meta" aria-live="polite">
+                <span class="meta-chip">当前箱数 <strong id="count">0</strong></span>
+                <span class="meta-chip meta-chip--soft" id="targetLine"></span>
+              </div>
+              <p class="hint" id="hint">
+                单指拖动画布旋转仓库；双指可缩放。点选格面放箱，点「拆除」后再点箱子可移除。
+              </p>
+            </div>
+          </header>
+
+          <aside class="sheet-panel" id="sheetPanel" hidden aria-label="示例搭建图纸">
+            <div class="sheet-panel__bar">
+              <span class="sheet-panel__title">示例图纸</span>
+              <span class="sheet-panel__badge" id="sheetPanelBadge"></span>
+            </div>
+            <p class="sheet-panel__caption" id="sheetPanelCaption"></p>
+            <div class="sheet-panel__diagram" id="sheetPanelDiagram"></div>
+            <p class="sheet-panel__foot">
+              俯视图说明：格内数字＝这一摞有几箱；虚线格表示不放箱子。
+            </p>
+          </aside>
+        </div>
+
+        <div class="dock">
+          <p class="dock__feedback" id="feedback" role="status" aria-live="polite"></p>
+          <div class="control-bar">
+            <div class="mode-switch" role="group" aria-label="操作模式">
+              <button
+                type="button"
+                class="btn btn-mode toggle btn--dock-icon"
+                id="btn-place"
+                aria-pressed="true"
+                aria-label="放箱子"
+                title="放箱子"
+              >
+                <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M5 10h14v9H5z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M5 10l7-3 7 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <path d="M12 12v4M10 14h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="btn btn-mode toggle btn--dock-icon"
+                id="btn-remove"
+                aria-pressed="false"
+                aria-label="拿箱子"
+                title="拿箱子"
+              >
+                <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M5 10h14v9H5z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M5 10l7-3 7 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  <path d="M9 14h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn btn-undo btn--dock-icon"
+              id="btn-undo"
+              disabled
+              aria-label="撤回上一步"
+              title="撤回上一步"
+            >
+              <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <polyline
+                  points="9 10 4 15 9 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 15h11.5a4.5 4.5 0 1 0 0-9H13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="btn btn-clear btn--dock-icon"
+              id="btn-clear"
+              aria-label="清空所有箱子"
+              title="清空所有箱子（不改变当前情境，可撤回）"
+            >
+              <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <path
+                  d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6m4-6v6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="btn btn-tools btn--dock-icon"
+              id="btn-tools"
+              aria-expanded="false"
+              aria-controls="toolSheet"
+              aria-label="研究工具"
+              title="研究工具"
+              hidden
+            >
+              <svg
+                class="btn__dock-svg btn-tools__glyph btn-tools__glyph--when-closed"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <line x1="3" y1="7" x2="21" y2="7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="9" cy="7" r="2.5" fill="currentColor" />
+                <line x1="3" y1="12" x2="21" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="15" cy="12" r="2.5" fill="currentColor" />
+                <line x1="3" y1="17" x2="21" y2="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="7" cy="17" r="2.5" fill="currentColor" />
+              </svg>
+              <svg
+                class="btn__dock-svg btn-tools__glyph btn-tools__glyph--when-open"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M18 15l-6-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <section class="tool-sheet" id="toolSheet" hidden aria-label="研究工具面板">
+            <div class="tool-sheet__head">
+              <div>
+                <p class="tool-sheet__eyebrow">切换任务与观察方式</p>
+                <strong class="tool-sheet__title">研究工具</strong>
+              </div>
+              <button
+                type="button"
+                class="tool-sheet__close"
+                id="btn-close-tools"
+                aria-label="收起研究工具"
+              >
+                收起
+              </button>
+            </div>
+            <p class="dock__ops-tip">
+              先选主操作，再轻点 3D 画面。单指拖动能转动仓库，双指捏合能放大缩小。
+            </p>
+            <nav class="dock__nav" aria-label="教学操作">
+              <div class="toolbar-scroll">
+                <div class="group">
+                  <span class="group-label">研究任务</span>
+                  <div class="group__btns">
+                    <button type="button" class="btn primary" data-scene="intro">
+                      情境·4箱遮挡
+                    </button>
+                    <button type="button" class="btn" data-scene="free">清空·自由堆</button>
+                    <button type="button" class="btn" data-scene="sheet1">图纸一·6箱</button>
+                    <button type="button" class="btn" data-scene="sheet2">图纸二·6箱</button>
+                  </div>
+                </div>
+                <div class="group">
+                  <span class="group-label">观察视角</span>
+                  <div class="group__btns">
+                    <button type="button" class="btn" id="btn-front">正视</button>
+                    <button type="button" class="btn" id="btn-side">侧视</button>
+                    <button type="button" class="btn" id="btn-freecam">自由视角</button>
+                  </div>
+                </div>
+                <div class="group group--actions">
+                  <span class="group-label">辅助工具</span>
+                  <div class="group__btns group__btns--actions">
+                    <button type="button" class="btn" id="btn-xray" aria-pressed="false">
+                      打开透视
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-fullscreen"
+                      id="btn-fullscreen"
+                      aria-pressed="false"
+                    >
+                      堆箱全屏
+                    </button>
+                    <button type="button" class="btn danger" id="btn-reset">重置本关</button>
+                  </div>
+                </div>
+              </div>
+            </nav>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!--
+      默认 file-bundle.js：单文件打包 Three，避免 vendor/*.js 被当成 HTML（MIME 报错、箱子不渲染）。
+      需要直接改 main-enhanced.js 并即时刷新时，在地址栏加 ?module=1（服务器须正确提供 vendor 下的 .js）。
+    -->
+    <script>
+      (function () {
+        var script = document.createElement("script");
+        var isFile = window.location.protocol === "file:";
+        var forceModule = /(?:^|[?&])module=1(?:&|$)/.test(window.location.search);
+        var useModule = !isFile && forceModule;
+        if (useModule) {
+          script.type = "module";
+          script.src = "./main-enhanced.js";
+        } else {
+          script.defer = true;
+          script.src = "./file-bundle.js";
+        }
+        document.body.appendChild(script);
+      })();
+    </script>
+    <script>
+      if (
+        "serviceWorker" in navigator &&
+        window.isSecureContext
+      ) {
+        navigator.serviceWorker
+          .register("./sw.js", { scope: "./" })
+          .catch(function () {});
+      }
+    </script>
+  </body>
+</html>

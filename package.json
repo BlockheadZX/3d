@@ -1,0 +1,8 @@
+{
+  "name": "harvest-orchard-warehouse",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "pages:build": "node scripts/prepare-pages.mjs"
+  }
+}
