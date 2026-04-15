@@ -19,8 +19,31 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" href="./icons/app-icon.png" />
     <link rel="apple-touch-icon" href="./icons/app-icon.png" />
-    <link rel="stylesheet" href="./styles.css" id="appStylesheet" />
+    <link rel="stylesheet" href="./styles.css?v=v46" id="appStylesheet" />
+    <!-- harvest-app-version:v46 -->
+    <script>
+      window.__APP_VERSION__ = "v46";
+      console.log("[丰收的果园] " + window.__APP_VERSION__);
+      document.addEventListener("DOMContentLoaded", function () {
+        var el = document.getElementById("app-version-badge");
+        if (el) el.textContent = window.__APP_VERSION__;
+      });
+    </script>
     <style>
+      .app-version-badge {
+        position: fixed;
+        left: max(8px, env(safe-area-inset-left, 0px) + 4px);
+        bottom: max(8px, env(safe-area-inset-bottom, 0px) + 4px);
+        z-index: 40;
+        font-size: 10px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.2);
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        pointer-events: none;
+        user-select: none;
+      }
+
       .boot-diagnostic {
         position: fixed;
         top: max(10px, env(safe-area-inset-top, 0px) + 6px);
@@ -488,6 +511,7 @@
         <div class="dock">
           <p class="dock__feedback" id="feedback" role="status" aria-live="polite"></p>
           <div class="control-bar">
+            <div class="dock-modes">
             <div class="mode-switch" role="group" aria-label="操作模式">
               <button
                 type="button"
@@ -529,6 +553,20 @@
                   <path d="M9 14h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </button>
+            </div>
+            <button
+              type="button"
+              class="btn btn-counting btn--dock-icon"
+              id="btn-count-mode"
+              aria-pressed="false"
+              aria-label="数箱子：标记已数过，不能再放新箱"
+              title="数箱子"
+            >
+              <svg class="btn__dock-svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2" />
+                <text x="12" y="15" text-anchor="middle" font-size="9" font-weight="800" fill="currentColor" font-family="system-ui,sans-serif">123</text>
+              </svg>
+            </button>
             </div>
             <button
               type="button"
@@ -639,8 +677,10 @@
                       情境·4箱遮挡
                     </button>
                     <button type="button" class="btn" data-scene="free">清空·自由堆</button>
-                    <button type="button" class="btn" data-scene="sheet1">图纸一·6箱</button>
-                    <button type="button" class="btn" data-scene="sheet2">图纸二·6箱</button>
+                    <button type="button" class="btn" data-scene="sheet8">图纸八·8箱</button>
+                    <button type="button" class="btn" data-scene="sheet9">图纸九·9箱</button>
+                    <button type="button" class="btn" data-scene="sheet10">图纸十·10箱</button>
+                    <button type="button" class="btn" data-scene="sheet11">图纸十一·9箱</button>
                   </div>
                 </div>
                 <div class="group">
@@ -675,6 +715,7 @@
       </div>
     </div>
 
+    <span id="app-version-badge" class="app-version-badge" aria-hidden="true"></span>
     <!--
       默认 file-bundle.js：单文件打包 Three，避免 vendor/*.js 被当成 HTML（MIME 报错、箱子不渲染）。
       需要直接改 main-enhanced.js 并即时刷新时，在地址栏加 ?module=1（服务器须正确提供 vendor 下的 .js）。
@@ -697,12 +738,17 @@
             );
           }
         });
+        var ver =
+          typeof window.__APP_VERSION__ === "string" && window.__APP_VERSION__
+            ? window.__APP_VERSION__
+            : "";
+        var bust = !isFile && ver ? "?v=" + encodeURIComponent(ver) : "";
         if (useModule) {
           script.type = "module";
-          script.src = "./main-enhanced.js";
+          script.src = "./main-enhanced.js" + bust;
         } else {
           script.defer = true;
-          script.src = "./file-bundle.js";
+          script.src = "./file-bundle.js" + bust;
         }
         document.body.appendChild(script);
       })();

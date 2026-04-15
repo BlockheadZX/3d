@@ -10,7 +10,7 @@ if (bootDiagnostic) {
   bootDiagnostic.mark("js", "ok", "脚本已启动，正在准备 3D 场景。");
 }
 
-const GRID = 8;
+const GRID = 4;
 const CELL = 1;
 const MAX_H = 8;
 const MAX_HISTORY_ENTRIES = 36;
@@ -29,8 +29,8 @@ const ORIGIN = new THREE.Vector3(
   ((GRID - 1) * CELL) / 2
 );
 const DEFAULT_CAMERA_TARGET = ORIGIN.clone().add(new THREE.Vector3(0, 1.1, 0));
-/** 略拉近，减少画面四周「空蓝天」占比 */
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(9.8, 5.6, 12.8);
+/** 略拉近，减少画面四周「空蓝天」占比（随 GRID 4×4 略收） */
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(5.8, 4.8, 7.5);
 
 const PRESETS = {
   intro: {
@@ -45,10 +45,10 @@ const PRESETS = {
       { label: "说说发现", prompt: "说说发现：为什么正面像 3 箱，实际却有 4 箱？" },
     ],
     cells: [
+      [1, 0, 2],
+      [2, 0, 2],
+      [3, 0, 2],
       [2, 0, 3],
-      [3, 0, 3],
-      [4, 0, 3],
-      [3, 0, 4],
     ],
     target: 4,
   },
@@ -66,51 +66,124 @@ const PRESETS = {
     cells: [],
     target: null,
   },
-  sheet1: {
-    name: "图纸一·6箱",
-    label: "图纸一：6 箱平铺（无遮挡）",
-    task: "研究任务：照着图纸搭 6 箱，看看每一格是不是都只有 1 层。",
+  /**
+   * 图纸八：参考 3×3 网格示意（后左为原点方向），五摞共 8 箱。
+   * 左后、中后、左中各 2 层；正中、右中各 1 层；其余格空。
+   */
+  sheet8: {
+    name: "图纸八·8箱",
+    label: "图纸八：五摞错落（三摞两层、两摞一层），共 8 箱",
+    task: "研究任务：按参考图在 3×3 区域内搭出五摞箱子，注意有两格只有一只箱。",
     recommendedView: "freecam",
     phases: [
-      { label: "先读图", prompt: "先读图：看看图纸里哪些格子要放箱子。" },
-      { label: "先猜想", prompt: "先猜一猜：这张图纸里，每一格会叠几层？" },
-      { label: "动手验证", prompt: "动手验证：照着图纸搭出来，看看是不是每格都只有 1 层。" },
-      { label: "说说发现", prompt: "说说发现：这张图纸为什么没有遮挡，看起来更容易数？" },
+      { label: "先读图", prompt: "先读图：图里有几摞是「叠两层」的？有几摞只有一层？" },
+      { label: "先猜想", prompt: "先猜一猜：一共是几只箱子？" },
+      { label: "动手验证", prompt: "动手验证：搭完后转一转，和俯视图格内数字对照。" },
+      { label: "说说发现", prompt: "说说发现：空格子对「数箱子」有什么帮助？" },
     ],
     cells: [
-      [2, 0, 3],
-      [3, 0, 3],
-      [4, 0, 3],
-      [2, 0, 4],
-      [3, 0, 4],
-      [4, 0, 4],
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [0, 0, 1],
+      [0, 1, 1],
+      [1, 0, 1],
+      [2, 0, 0],
     ],
-    target: 6,
-    diagramBadge: "图纸一",
-    diagramCaption: "两排各 3 箱，每格都是 1 层高，共 6 箱。",
+    target: 8,
+    diagramBadge: "图纸八",
+    diagramCaption: "（gx,gz）左后(0,0)(1,0)与中后(0,1)各 2 层；正中(1,1) 1 层；右前(2,0) 1 层；(2,1) 不放箱，共 8 箱。",
   },
-  sheet2: {
-    name: "图纸二·6箱",
-    label: "图纸二：6 箱带遮挡，可用透视分层点数",
-    task: "研究任务：根据图纸找出被挡住的箱子，需要时再打开透视。",
-    recommendedView: "front",
+  /** 前排 2、2、1，后排左两格 2 层（右后空），共 9 箱 */
+  sheet9: {
+    name: "图纸九·9箱",
+    label: "图纸九：前排多出一格，后排两格仍叠高，共 9 箱",
+    task: "研究任务：照图搭 9 箱，注意最右前一格只有一层、右后一格不放箱。",
+    recommendedView: "freecam",
     phases: [
-      { label: "先读图", prompt: "先读图：先找一找，哪一格可能会叠到 2 层。" },
-      { label: "先猜想", prompt: "先猜一猜：哪些箱子会被前面的箱子挡住？" },
-      { label: "动手验证", prompt: "动手验证：搭出来以后换方向观察，需要时再打开透视。" },
-      { label: "说说发现", prompt: "说说发现：这张图纸里，哪一箱最容易被忽略？" },
+      { label: "先读图", prompt: "先读图：哪一格只有一层？哪一格在图上是空的？" },
+      { label: "先猜想", prompt: "先猜一猜：从正面看会不会少看到几只？" },
+      { label: "动手验证", prompt: "动手验证：搭完换侧面、自由视角数一数。" },
+      { label: "说说发现", prompt: "说说发现：「凸出一块」时，数箱更容易还是更难？" },
     ],
     cells: [
-      [2, 0, 3],
-      [3, 0, 3],
-      [4, 0, 3],
-      [2, 0, 4],
-      [3, 0, 4],
-      [3, 1, 3],
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [2, 0, 0],
+      [0, 0, 1],
+      [0, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
     ],
-    target: 6,
-    diagramBadge: "图纸二",
-    diagramCaption: "中间靠前那一摞要叠 2 层；虚线格不放箱，共 6 箱。",
+    target: 9,
+    diagramBadge: "图纸九",
+    diagramCaption: "前排三列 2、2、1 层；后排左两列各 2 层，右后不放，共 9 箱。",
+  },
+  /** 前排 2、1、1，后排 3、2、1，共 10 箱 */
+  /**
+   * 图纸十：阶梯形（3×3 区域）。矩阵「后→前」行、「左→右」列，
+   * 层高 [3,2,1] / [2,1,0] / [1,0,0]（其中 (1,1) 仅 1 箱），gx=列、gz=行，共 10 箱。
+   */
+  sheet10: {
+    name: "图纸十·10箱",
+    label: "图纸十：阶梯形三排错落，共 10 箱",
+    task: "研究任务：按参考图搭出左后最高、向右向前逐层变矮的台阶形，可用透视核对。",
+    recommendedView: "freecam",
+    phases: [
+      { label: "先读图", prompt: "先读图：哪一摞最高？哪几格是空的？" },
+      { label: "先猜想", prompt: "先猜一猜：一共要几只箱子？" },
+      { label: "动手验证", prompt: "动手验证：搭完转一转，对照俯视图格内数字。" },
+      { label: "说说发现", prompt: "说说发现：这种「台阶」从斜上方看像什么？" },
+    ],
+    cells: [
+      [0, 0, 0],
+      [0, 1, 0],
+      [0, 2, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [2, 0, 0],
+      [0, 0, 1],
+      [0, 1, 1],
+      [1, 0, 1],
+      [0, 0, 2],
+    ],
+    target: 10,
+    diagramBadge: "图纸十",
+    diagramCaption:
+      "层高矩阵（后→前为行，左→右为列）：[3,2,1] / [2,1,0] / [1,0,0]，(1,1) 仅 1 箱，共 10 箱。",
+  },
+  /**
+   * 图纸十一：9 箱。(0,0)3、(1,0)2、(0,1)2；(2,0)(2,1) 各 1 箱；(0,2)(1,2) 不放；(1,1) 空。
+   */
+  sheet11: {
+    name: "图纸十一·9箱",
+    label: "图纸十一：左区叠高、(2,0)(2,1) 各 1 箱，共 9 箱",
+    task: "研究任务：按层高示意搭 9 箱，注意 (1,1) 不放箱，前排 (0,2)(1,2) 不放。",
+    recommendedView: "freecam",
+    phases: [
+      { label: "先读图", prompt: "先读图：哪一格叠得最高？哪一格是空的？" },
+      { label: "先猜想", prompt: "先猜一猜：空的那一格会影响你从正面数箱吗？" },
+      { label: "动手验证", prompt: "动手验证：搭完换角度，和俯视图数字核对。" },
+      { label: "说说发现", prompt: "说说发现：为什么图纸里要留一个「洞」？" },
+    ],
+    cells: [
+      [0, 0, 0],
+      [0, 1, 0],
+      [0, 2, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [0, 0, 1],
+      [0, 1, 1],
+      [2, 0, 0],
+      [2, 0, 1],
+    ],
+    target: 9,
+    diagramBadge: "图纸十一",
+    diagramCaption:
+      "(0,0)3、(1,0)2、(0,1)2；(2,0)(2,1) 各 1 箱；(0,2)(1,2) 不放；(1,1) 不放，共 9 箱。",
   },
 };
 
@@ -137,6 +210,7 @@ const btnClear = document.getElementById("btn-clear");
 const btnXray = document.getElementById("btn-xray");
 const btnPlace = document.getElementById("btn-place");
 const btnRemove = document.getElementById("btn-remove");
+const btnCountMode = document.getElementById("btn-count-mode");
 const btnReset = document.getElementById("btn-reset");
 const btnFront = document.getElementById("btn-front");
 const btnSide = document.getElementById("btn-side");
@@ -180,6 +254,7 @@ const interactiveButtons = [
   btnPhaseNext,
   btnTopPanelToggle,
   btnTopPanelSummary,
+  btnCountMode,
 ].filter(Boolean);
 
 const state = {
@@ -201,6 +276,8 @@ const state = {
   topPanelCollapsed:
     IS_COARSE_POINTER && window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W,
   toolSheetOpen: false,
+  /** 幼儿「数箱子」：禁止再放/拿，点箱变色表示已数过 */
+  countingMode: false,
 };
 
 const scene = new THREE.Scene();
@@ -257,8 +334,8 @@ controls.target.copy(DEFAULT_CAMERA_TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.enablePan = false;
-controls.minDistance = 7;
-controls.maxDistance = 30;
+controls.minDistance = 4.2;
+controls.maxDistance = 22;
 controls.maxPolarAngle = Math.PI * 0.495;
 controls.rotateSpeed = IS_COARSE_POINTER ? 0.92 : 1;
 controls.zoomSpeed = 0.95;
@@ -313,19 +390,19 @@ scene.add(gridHelper);
 const boxGeo = new THREE.BoxGeometry(CELL * 0.92, CELL * 0.92, CELL * 0.92);
 const edgeGeo = new THREE.EdgesGeometry(boxGeo);
 const OUTLINE_COLOR = 0x4a3020;
-/** 透视：更透明 + 冷色自发光，线框提亮便于分辨前后层 */
-const XRAY_MESH_OPACITY = 0.2;
-const XRAY_MESH_EMISSIVE = 0x4a8cc8;
-const XRAY_MESH_EMISSIVE_INTENSITY = 0.48;
-const XRAY_LINE_OPACITY = 0.92;
-const XRAY_LINE_COLOR = 0xf0e0cc;
-const CARTOON_CRATE_HEX = [
-  0xffb088,
-  0xffe566,
-  0x7ee0b0,
-  0xff9ec8,
-  0x8fd4ff,
-  0xe4b8ff,
+/**
+ * 透视：仅「靠外一排」虚化（主箱体 colorWrite=false；线框 + 淡色壳 depthTest=false）；
+ * 后排保持实体与阴影。正面看 gz 最大一排，侧面看 gx 最大一排；换视角会重算。
+ */
+const XRAY_LINE_OPACITY = 0.82;
+const XRAY_LINE_COLOR = 0xf5ecd8;
+/** 透视外壳：略大于实体；不写深度、不测深度，与主箱同色索引 */
+const XRAY_SHELL_OPACITY = 0.15;
+const XRAY_SHELL_SCALE = 1.012;
+/** 地面格一色（gx+gz*GRID 在 4×4 上 0…15 各占一种），同摞同色便于辨认 */
+const CRATE_PALETTE_HEX = [
+  0xf07856, 0xf0a030, 0xe8c038, 0xb8c848, 0x70c070, 0x50b898, 0x48b0d0, 0x5890e8,
+  0x7878e8, 0xa868d8, 0xd060a0, 0xe86878, 0xd89860, 0x90b070, 0x68a0c8, 0xb89890,
 ];
 
 /** @type {{ side: THREE.CanvasTexture; top: THREE.CanvasTexture }[]} */
@@ -437,21 +514,26 @@ function buildCrateTopTexture(accentHex) {
   return makeCanvasTexture(canvas);
 }
 
-function getCrateTexturePair(colorIndex) {
-  if (!crateTextureCache[colorIndex]) {
-    const hex = CARTOON_CRATE_HEX[colorIndex % CARTOON_CRATE_HEX.length];
-    crateTextureCache[colorIndex] = {
+function cratePaletteIndex(gx, gz) {
+  return gx + gz * GRID;
+}
+
+function getCrateTexturePair(paletteIndex) {
+  const idx = paletteIndex % CRATE_PALETTE_HEX.length;
+  if (!crateTextureCache[idx]) {
+    const hex = CRATE_PALETTE_HEX[idx];
+    crateTextureCache[idx] = {
       side: buildCrateSideTexture(hex),
       top: buildCrateTopTexture(hex),
     };
   }
-  return crateTextureCache[colorIndex];
+  return crateTextureCache[idx];
 }
 
 /** 六面木箱材质（纹理共享，材质每箱 clone，便于透视与 dispose） */
 function createFruitCrateMaterials(gx, gy, gz) {
-  const colorIndex = (gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length;
-  const { side: sideMap, top: topMap } = getCrateTexturePair(colorIndex);
+  const paletteIndex = cratePaletteIndex(gx, gz);
+  const { side: sideMap, top: topMap } = getCrateTexturePair(paletteIndex);
 
   const wood = new THREE.MeshStandardMaterial({
     map: sideMap,
@@ -475,6 +557,21 @@ function createFruitCrateMaterials(gx, gy, gz) {
   const mats = [wood, wood, topM, bottomM, wood, wood];
   return mats.map((m) => m.clone());
 }
+
+/** 透视时可见：与同格木箱主色略混木底，极淡不挡后面 */
+function createXrayTintShellMaterial(paletteIndex) {
+  const hex = CRATE_PALETTE_HEX[paletteIndex % CRATE_PALETTE_HEX.length];
+  const c = new THREE.Color(hex);
+  c.lerp(new THREE.Color(0xc4a882), 0.42);
+  return new THREE.MeshBasicMaterial({
+    color: c,
+    transparent: true,
+    opacity: XRAY_SHELL_OPACITY,
+    depthWrite: false,
+    depthTest: true,
+    fog: true,
+  });
+}
 const DIAGRAM_FILLS = [
   "#ffb088",
   "#ffe566",
@@ -483,6 +580,10 @@ const DIAGRAM_FILLS = [
   "#8fd4ff",
   "#e4b8ff",
 ];
+
+/** 数箱子模式：已点箱体的高对比标记色（仅改 MeshStandardMaterial.color） */
+const COUNT_MODE_TINT = new THREE.Color(0x22c55e);
+const COUNT_MODE_COLOR_MIX = 0.88;
 
 const cubes = new Map();
 const raycaster = new THREE.Raycaster();
@@ -512,12 +613,20 @@ function setFeedbackText(text, tone) {
 }
 
 function getDefaultFeedbackTone() {
+  if (state.countingMode) return "info";
+  if (isDiagramSheetKey(state.currentKey)) return "info";
   return state.mode === "place" ? "place" : "remove";
 }
 
 function getDefaultFeedback() {
   if (state.contextLost) {
     return "3D 画面恢复中，请稍等。";
+  }
+  if (state.countingMode) {
+    return "数箱子模式：轻点每只箱子，变色表示你已经数过；不能再放新箱。";
+  }
+  if (isDiagramSheetKey(state.currentKey)) {
+    return "当前为图纸情境：可转动视角观摩，不能放箱或拿箱。需要搭建时请点「清空·自由堆」等任务。";
   }
   return state.mode === "place"
     ? "轻点空位置或箱子顶面，放上一个新箱子。"
@@ -727,6 +836,13 @@ function syncResearchPhaseFromAction(action) {
 }
 
 function setTeacherMode(enabled, { announce = true } = {}) {
+  if (enabled && state.countingMode) {
+    state.countingMode = false;
+    clearAllCountedMarks();
+    if (!state.contextLost) {
+      restoreDefaultFeedback();
+    }
+  }
   state.teacherMode = enabled;
   syncTeacherModeUI();
   if (enabled) {
@@ -735,6 +851,7 @@ function setTeacherMode(enabled, { announce = true } = {}) {
     maybeCollapseTopPanel();
   }
   syncTopPanelVisibility();
+  syncCountingModeUI();
   if (announce) {
     showFeedback(
       enabled
@@ -770,9 +887,24 @@ function updateSceneButtons() {
 }
 
 function updateModeUI() {
-  const isPlace = state.mode === "place";
-  if (btnPlace) btnPlace.setAttribute("aria-pressed", isPlace ? "true" : "false");
-  if (btnRemove) btnRemove.setAttribute("aria-pressed", isPlace ? "false" : "true");
+  const sheetReadonly = isDiagramSheetKey(state.currentKey);
+  const blocked = state.contextLost || state.countingMode || sheetReadonly;
+  if (btnPlace) {
+    btnPlace.disabled = blocked;
+    if (state.countingMode || sheetReadonly) {
+      btnPlace.setAttribute("aria-pressed", "false");
+    } else {
+      btnPlace.setAttribute("aria-pressed", state.mode === "place" ? "true" : "false");
+    }
+  }
+  if (btnRemove) {
+    btnRemove.disabled = blocked;
+    if (state.countingMode || sheetReadonly) {
+      btnRemove.setAttribute("aria-pressed", "false");
+    } else {
+      btnRemove.setAttribute("aria-pressed", state.mode === "place" ? "false" : "true");
+    }
+  }
 }
 
 function setMode(nextMode, { announce = true } = {}) {
@@ -791,43 +923,131 @@ function setMode(nextMode, { announce = true } = {}) {
   }
 }
 
-function applyXrayToGroup(group, enabled) {
+/** 透视虚化：仅「离当前相机最近的一排」木箱（正面看大 gz；侧面看大 gx），后排保持实体色 */
+function isXrayGhostRow(gx, gz) {
+  if (state.activeCamera === "side") {
+    return gx === GRID - 1;
+  }
+  return gz === GRID - 1;
+}
+
+function applyXrayToGroup(group, xrayOn) {
+  const { gx, gz } = group.userData;
+  const ghost = !!xrayOn && isXrayGhostRow(gx, gz);
+
   const applyMat = (material) => {
-    material.transparent = enabled;
-    material.opacity = enabled ? XRAY_MESH_OPACITY : 1;
-    material.depthWrite = !enabled;
-    if (material.isMeshStandardMaterial) {
-      if (enabled) {
-        if (!material.userData.xraySaved) {
-          material.userData.xraySaved = {
-            emissive: material.emissive.clone(),
-            emissiveIntensity: material.emissiveIntensity,
-          };
+    if (ghost) {
+      if (!material.userData.xraySaved) {
+        material.userData.xraySaved = {
+          transparent: material.transparent,
+          opacity: material.opacity,
+          depthWrite: material.depthWrite,
+          colorWrite: material.colorWrite,
+        };
+        if (material.isMeshStandardMaterial) {
+          material.userData.xraySaved.emissive = material.emissive.clone();
+          material.userData.xraySaved.emissiveIntensity = material.emissiveIntensity;
         }
-        material.emissive.setHex(XRAY_MESH_EMISSIVE);
-        material.emissiveIntensity = XRAY_MESH_EMISSIVE_INTENSITY;
-      } else if (material.userData.xraySaved) {
-        const saved = material.userData.xraySaved;
+      }
+      material.transparent = false;
+      material.opacity = 1;
+      material.depthWrite = false;
+      material.colorWrite = false;
+      if (material.isMeshStandardMaterial) {
+        material.emissive.setHex(0);
+        material.emissiveIntensity = 0;
+      }
+    } else if (material.userData.xraySaved) {
+      const saved = material.userData.xraySaved;
+      material.transparent = saved.transparent;
+      material.opacity = saved.opacity;
+      material.depthWrite = saved.depthWrite;
+      material.colorWrite = saved.colorWrite;
+      if (material.isMeshStandardMaterial && saved.emissive) {
         material.emissive.copy(saved.emissive);
         material.emissiveIntensity = saved.emissiveIntensity;
       }
     }
   };
   group.traverse((object) => {
+    if (object.name === "crateXrayShell" && object.isMesh && object.material) {
+      const sm = object.material;
+      object.visible = ghost;
+      if (ghost) {
+        if (!sm.userData.xrayShellSaved) {
+          sm.userData.xrayShellSaved = { depthTest: sm.depthTest };
+        }
+        sm.depthTest = false;
+      } else if (sm.userData.xrayShellSaved) {
+        sm.depthTest = sm.userData.xrayShellSaved.depthTest;
+      }
+      return;
+    }
     if (object.isLineSegments && object.material) {
       const m = object.material;
-      m.transparent = true;
-      m.depthWrite = !enabled;
-      if (enabled) {
+      if (ghost) {
+        if (!m.userData.xrayLineSaved) {
+          m.userData.xrayLineSaved = {
+            transparent: m.transparent,
+            opacity: m.opacity,
+            color: m.color.clone(),
+            depthWrite: m.depthWrite,
+            depthTest: m.depthTest,
+            polygonOffset: m.polygonOffset,
+            polygonOffsetFactor: m.polygonOffsetFactor,
+            polygonOffsetUnits: m.polygonOffsetUnits,
+          };
+        }
+        m.transparent = true;
+        m.depthWrite = false;
+        m.depthTest = false;
         m.opacity = XRAY_LINE_OPACITY;
         m.color.setHex(XRAY_LINE_COLOR);
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = -1;
+        m.polygonOffsetUnits = -1;
+        object.renderOrder = 1;
+      } else if (m.userData.xrayLineSaved) {
+        const s = m.userData.xrayLineSaved;
+        m.transparent = s.transparent;
+        m.opacity = s.opacity;
+        m.color.copy(s.color);
+        m.depthWrite = s.depthWrite;
+        m.depthTest = s.depthTest;
+        m.polygonOffset = s.polygonOffset;
+        m.polygonOffsetFactor = s.polygonOffsetFactor;
+        m.polygonOffsetUnits = s.polygonOffsetUnits;
+        object.renderOrder = 0;
       } else {
+        m.transparent = true;
         m.opacity = 0.92;
         m.color.setHex(OUTLINE_COLOR);
+        m.depthWrite = true;
+        m.depthTest = true;
+        m.polygonOffset = false;
+        m.polygonOffsetFactor = 0;
+        m.polygonOffsetUnits = 0;
+        object.renderOrder = 0;
       }
       return;
     }
     if (!object.isMesh || !object.material) return;
+    if (object.name === "cratePick") {
+      if (ghost) {
+        if (!object.userData.xrayShadowSaved) {
+          object.userData.xrayShadowSaved = {
+            castShadow: object.castShadow,
+            receiveShadow: object.receiveShadow,
+          };
+        }
+        object.castShadow = false;
+        object.receiveShadow = false;
+      } else if (object.userData.xrayShadowSaved) {
+        const sh = object.userData.xrayShadowSaved;
+        object.castShadow = sh.castShadow;
+        object.receiveShadow = sh.receiveShadow;
+      }
+    }
     if (Array.isArray(object.material)) {
       object.material.forEach(applyMat);
     } else {
@@ -845,7 +1065,9 @@ function setXray(enabled, { announce = true } = {}) {
   cubes.forEach((group) => applyXrayToGroup(group, enabled));
   if (announce) {
     showFeedback(
-      enabled ? "透视已打开，可以看到后面的箱子。" : "透视已关闭，恢复普通观察。",
+      enabled
+        ? "透视已打开：只虚化靠外一排，后排仍实体色；每格木箱颜色不同便于辨认。"
+        : "透视已关闭，恢复普通观察。",
       enabled ? "success" : "info"
     );
     if (enabled) {
@@ -969,6 +1191,16 @@ function addCube(gx, gy, gz) {
   mesh.name = "cratePick";
   group.add(mesh);
 
+  const shell = new THREE.Mesh(boxGeo, createXrayTintShellMaterial(cratePaletteIndex(gx, gz)));
+  shell.name = "crateXrayShell";
+  shell.scale.setScalar(XRAY_SHELL_SCALE);
+  shell.visible = false;
+  shell.castShadow = false;
+  shell.receiveShadow = false;
+  shell.renderOrder = -1;
+  shell.raycast = () => {};
+  group.add(shell);
+
   const edges = new THREE.LineSegments(
     edgeGeo,
     new THREE.LineBasicMaterial({
@@ -980,7 +1212,7 @@ function addCube(gx, gy, gz) {
   group.add(edges);
 
   group.position.copy(worldPos(gx, gy, gz));
-  group.userData = { gx, gy, gz, key, pickMesh: mesh };
+  group.userData = { gx, gy, gz, key, pickMesh: mesh, counted: false };
   scene.add(group);
   cubes.set(key, group);
   applyXrayToGroup(group, state.xray);
@@ -1031,6 +1263,7 @@ function removeCube(gx, gy, gz) {
 }
 
 function clearAll() {
+  clearAllCountedMarks();
   const sorted = [...cubes.keys()]
     .map((key) => key.split(",").map(Number))
     .sort((left, right) => right[1] - left[1]);
@@ -1069,6 +1302,14 @@ function getRemoveSuccessText() {
 }
 
 function placeCubeWithHistory(gx, gy, gz) {
+  if (state.countingMode) {
+    showFeedback("数箱子模式下不能再放新箱，请先退出数箱子。", "warn", 2200);
+    return false;
+  }
+  if (isDiagramSheetKey(state.currentKey)) {
+    showFeedback("图纸情境下不能放箱，请先切换到「清空·自由堆」等任务。", "warn", 2200);
+    return false;
+  }
   const snapshot = captureState();
   const result = addCube(gx, gy, gz);
   if (!result.ok) {
@@ -1084,6 +1325,14 @@ function placeCubeWithHistory(gx, gy, gz) {
 }
 
 function removeCubeWithHistory(gx, gy, gz) {
+  if (state.countingMode) {
+    showFeedback("数箱子模式下不能拿走箱子，请先退出数箱子。", "warn", 2200);
+    return false;
+  }
+  if (isDiagramSheetKey(state.currentKey)) {
+    showFeedback("图纸情境下不能拿箱，请先切换到「清空·自由堆」等任务。", "warn", 2200);
+    return false;
+  }
   const snapshot = captureState();
   const result = removeCube(gx, gy, gz);
   if (!result.ok) {
@@ -1183,8 +1432,12 @@ function buildSheetDiagramSvg(cells) {
   return parts.join("");
 }
 
+function isDiagramSheetKey(key) {
+  return key === "sheet8" || key === "sheet9" || key === "sheet10" || key === "sheet11";
+}
+
 function syncSheetPanel(key) {
-  const show = key === "sheet1" || key === "sheet2";
+  const show = isDiagramSheetKey(key);
   overlayTop?.classList.toggle("overlay__top--diagram", show);
   if (!sheetPanel) return;
   if (!show) {
@@ -1213,11 +1466,13 @@ function refreshSceneUI() {
   syncSheetPanel(state.currentKey);
   updateSceneButtons();
   updateCountUI();
+  syncCountingModeUI();
 }
 
 /** 底部「清空」：撤掉所有箱子，不改变当前情境键（与工具栏「清空·自由堆」不同）。 */
 function clearSceneBoxesWithHistory() {
   if (state.contextLost) return;
+  setCountingMode(false, { announce: false });
   if (cubes.size === 0) {
     showFeedback("场地已经是空的。", "info", 1200);
     return;
@@ -1239,6 +1494,7 @@ function applyPresetState(key) {
   const preset = PRESETS[key];
   if (!preset) return false;
 
+  setCountingMode(false, { announce: false });
   state.currentKey = key;
   state.researchPhase = 0;
   clearAll();
@@ -1254,6 +1510,7 @@ function applyPresetState(key) {
 }
 
 function restoreSnapshot(snapshot) {
+  setCountingMode(false, { announce: false });
   state.currentKey = snapshot.key;
   state.researchPhase = snapshot.phase ?? 0;
   clearAll();
@@ -1334,6 +1591,113 @@ function xzToColumn(px, pz) {
   };
 }
 
+function clearAllCountedMarks() {
+  cubes.forEach((group) => {
+    group.userData.counted = false;
+    group.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach((m) => {
+        if (m.isMeshStandardMaterial && m.userData.countBaseColor) {
+          m.color.copy(m.userData.countBaseColor);
+          delete m.userData.countBaseColor;
+        }
+      });
+    });
+  });
+}
+
+function applyCountedVisualToGroup(group) {
+  group.traverse((obj) => {
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach((m) => {
+      if (!m.isMeshStandardMaterial || !m.color) return;
+      if (!m.userData.countBaseColor) {
+        m.userData.countBaseColor = m.color.clone();
+      }
+      m.color.copy(m.userData.countBaseColor).lerp(COUNT_MODE_TINT, COUNT_MODE_COLOR_MIX);
+    });
+  });
+}
+
+function countMarkedCubes() {
+  let n = 0;
+  cubes.forEach((g) => {
+    if (g.userData.counted) n += 1;
+  });
+  return n;
+}
+
+function tryMarkCountedFromRay() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickMeshes(), false);
+  if (!hits.length) {
+    showFeedback("请点在箱子上。", "warn", 1600);
+    return;
+  }
+  let root = hits[0].object;
+  while (root.parent && root.userData.gx == null) {
+    root = root.parent;
+  }
+  const data = root.userData;
+  if (!data || data.gx == null) return;
+  const group = cubes.get(keyOf(data.gx, data.gy, data.gz));
+  if (!group) return;
+  if (group.userData.counted) {
+    showFeedback("这只箱子已经数过了。", "info", 1400);
+    return;
+  }
+  group.userData.counted = true;
+  applyCountedVisualToGroup(group);
+  const marked = countMarkedCubes();
+  const total = cubes.size;
+  showFeedback(`已标记这一箱。已数标记 ${marked} / ${total} 箱。`, "success", 1800);
+}
+
+function setCountingMode(enabled, { announce = true } = {}) {
+  if (enabled && state.teacherMode) return;
+  if (state.countingMode === enabled) {
+    syncCountingModeUI();
+    return;
+  }
+  state.countingMode = enabled;
+  if (!enabled) {
+    clearAllCountedMarks();
+  }
+  syncCountingModeUI();
+  clearResetConfirm();
+  if (announce) {
+    if (enabled) {
+      showFeedback(
+        "已进入数箱子模式：不能再放新箱。请幼儿依次轻点每一只箱子，变色表示已数过。",
+        "info",
+        3200
+      );
+    } else {
+      showFeedback("已退出数箱子模式。", "success", 2000);
+    }
+  } else if (!state.contextLost) {
+    restoreDefaultFeedback();
+  }
+}
+
+function syncCountingModeUI() {
+  if (btnCountMode) {
+    btnCountMode.hidden = state.teacherMode;
+    btnCountMode.setAttribute("aria-pressed", state.countingMode ? "true" : "false");
+    btnCountMode.classList.toggle("is-active", state.countingMode);
+    btnCountMode.title = state.countingMode ? "退出数箱子" : "数箱子";
+    btnCountMode.setAttribute(
+      "aria-label",
+      state.countingMode
+        ? "退出数箱子模式，恢复放箱与拿箱"
+        : "数箱子：点箱变色表示已数过，不能再放新箱"
+    );
+  }
+  updateModeUI();
+}
+
 function ndcFromEvent(event) {
   const rect = canvas.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1342,6 +1706,7 @@ function ndcFromEvent(event) {
 }
 
 function tryPlaceFromRay() {
+  if (state.countingMode || isDiagramSheetKey(state.currentKey)) return;
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pickMeshes(), false);
 
@@ -1376,6 +1741,7 @@ function tryPlaceFromRay() {
 }
 
 function tryRemoveFromRay() {
+  if (state.countingMode || isDiagramSheetKey(state.currentKey)) return;
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pickMeshes(), false);
   if (!hits.length) {
@@ -1415,6 +1781,13 @@ function onPointerUp(event) {
   }
 
   ndcFromEvent(event);
+  if (state.countingMode) {
+    tryMarkCountedFromRay();
+    return;
+  }
+  if (isDiagramSheetKey(state.currentKey)) {
+    return;
+  }
   if (state.mode === "place") {
     tryPlaceFromRay();
   } else {
@@ -1470,6 +1843,9 @@ function applyCameraView(view, { announce = true, animate = true } = {}) {
     camera.position.copy(next.position);
     controls.target.copy(next.target);
     controls.update();
+  }
+  if (state.xray) {
+    cubes.forEach((g) => applyXrayToGroup(g, true));
   }
   if (announce) {
     showFeedback(next.message, "success", 1600);
@@ -1655,13 +2031,18 @@ btnXray?.addEventListener("click", () => {
 });
 
 btnPlace?.addEventListener("click", () => {
-  if (state.contextLost) return;
+  if (state.contextLost || state.countingMode || isDiagramSheetKey(state.currentKey)) return;
   setMode("place");
 });
 
 btnRemove?.addEventListener("click", () => {
-  if (state.contextLost) return;
+  if (state.contextLost || state.countingMode || isDiagramSheetKey(state.currentKey)) return;
   setMode("remove");
+});
+
+btnCountMode?.addEventListener("click", () => {
+  if (state.contextLost || state.teacherMode) return;
+  setCountingMode(!state.countingMode);
 });
 
 btnReset?.addEventListener("click", () => {
@@ -1757,6 +2138,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 setControlsDisabled(false);
+syncCountingModeUI();
 syncTeacherModeUI();
 setToolSheetOpen(state.toolSheetOpen);
 syncTopPanelForViewport();

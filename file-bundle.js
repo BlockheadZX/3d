@@ -20171,7 +20171,7 @@
   if (bootDiagnostic) {
     bootDiagnostic.mark("js", "ok", "\u811A\u672C\u5DF2\u542F\u52A8\uFF0C\u6B63\u5728\u51C6\u5907 3D \u573A\u666F\u3002");
   }
-  var GRID = 8;
+  var GRID = 4;
   var CELL = 1;
   var MAX_H = 8;
   var MAX_HISTORY_ENTRIES = 36;
@@ -20186,7 +20186,7 @@
     (GRID - 1) * CELL / 2
   );
   var DEFAULT_CAMERA_TARGET = ORIGIN.clone().add(new Vector3(0, 1.1, 0));
-  var DEFAULT_CAMERA_POSITION = new Vector3(9.8, 5.6, 12.8);
+  var DEFAULT_CAMERA_POSITION = new Vector3(5.8, 4.8, 7.5);
   var PRESETS = {
     intro: {
       name: "\u60C5\u5883\xB74\u7BB1\u906E\u6321",
@@ -20200,10 +20200,10 @@
         { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u4E3A\u4EC0\u4E48\u6B63\u9762\u50CF 3 \u7BB1\uFF0C\u5B9E\u9645\u5374\u6709 4 \u7BB1\uFF1F" }
       ],
       cells: [
-        [2, 0, 3],
-        [3, 0, 3],
-        [4, 0, 3],
-        [3, 0, 4]
+        [1, 0, 2],
+        [2, 0, 2],
+        [3, 0, 2],
+        [2, 0, 3]
       ],
       target: 4
     },
@@ -20221,51 +20221,122 @@
       cells: [],
       target: null
     },
-    sheet1: {
-      name: "\u56FE\u7EB8\u4E00\xB76\u7BB1",
-      label: "\u56FE\u7EB8\u4E00\uFF1A6 \u7BB1\u5E73\u94FA\uFF08\u65E0\u906E\u6321\uFF09",
-      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u7167\u7740\u56FE\u7EB8\u642D 6 \u7BB1\uFF0C\u770B\u770B\u6BCF\u4E00\u683C\u662F\u4E0D\u662F\u90FD\u53EA\u6709 1 \u5C42\u3002",
+    /**
+     * 图纸八：参考 3×3 网格示意（后左为原点方向），五摞共 8 箱。
+     * 左后、中后、左中各 2 层；正中、右中各 1 层；其余格空。
+     */
+    sheet8: {
+      name: "\u56FE\u7EB8\u516B\xB78\u7BB1",
+      label: "\u56FE\u7EB8\u516B\uFF1A\u4E94\u645E\u9519\u843D\uFF08\u4E09\u645E\u4E24\u5C42\u3001\u4E24\u645E\u4E00\u5C42\uFF09\uFF0C\u5171 8 \u7BB1",
+      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u6309\u53C2\u8003\u56FE\u5728 3\xD73 \u533A\u57DF\u5185\u642D\u51FA\u4E94\u645E\u7BB1\u5B50\uFF0C\u6CE8\u610F\u6709\u4E24\u683C\u53EA\u6709\u4E00\u53EA\u7BB1\u3002",
       recommendedView: "freecam",
       phases: [
-        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u770B\u770B\u56FE\u7EB8\u91CC\u54EA\u4E9B\u683C\u5B50\u8981\u653E\u7BB1\u5B50\u3002" },
-        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u8FD9\u5F20\u56FE\u7EB8\u91CC\uFF0C\u6BCF\u4E00\u683C\u4F1A\u53E0\u51E0\u5C42\uFF1F" },
-        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u7167\u7740\u56FE\u7EB8\u642D\u51FA\u6765\uFF0C\u770B\u770B\u662F\u4E0D\u662F\u6BCF\u683C\u90FD\u53EA\u6709 1 \u5C42\u3002" },
-        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u8FD9\u5F20\u56FE\u7EB8\u4E3A\u4EC0\u4E48\u6CA1\u6709\u906E\u6321\uFF0C\u770B\u8D77\u6765\u66F4\u5BB9\u6613\u6570\uFF1F" }
+        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u56FE\u91CC\u6709\u51E0\u645E\u662F\u300C\u53E0\u4E24\u5C42\u300D\u7684\uFF1F\u6709\u51E0\u645E\u53EA\u6709\u4E00\u5C42\uFF1F" },
+        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u4E00\u5171\u662F\u51E0\u53EA\u7BB1\u5B50\uFF1F" },
+        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u642D\u5B8C\u540E\u8F6C\u4E00\u8F6C\uFF0C\u548C\u4FEF\u89C6\u56FE\u683C\u5185\u6570\u5B57\u5BF9\u7167\u3002" },
+        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u7A7A\u683C\u5B50\u5BF9\u300C\u6570\u7BB1\u5B50\u300D\u6709\u4EC0\u4E48\u5E2E\u52A9\uFF1F" }
       ],
       cells: [
-        [2, 0, 3],
-        [3, 0, 3],
-        [4, 0, 3],
-        [2, 0, 4],
-        [3, 0, 4],
-        [4, 0, 4]
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 0, 1],
+        [2, 0, 0]
       ],
-      target: 6,
-      diagramBadge: "\u56FE\u7EB8\u4E00",
-      diagramCaption: "\u4E24\u6392\u5404 3 \u7BB1\uFF0C\u6BCF\u683C\u90FD\u662F 1 \u5C42\u9AD8\uFF0C\u5171 6 \u7BB1\u3002"
+      target: 8,
+      diagramBadge: "\u56FE\u7EB8\u516B",
+      diagramCaption: "\uFF08gx,gz\uFF09\u5DE6\u540E(0,0)(1,0)\u4E0E\u4E2D\u540E(0,1)\u5404 2 \u5C42\uFF1B\u6B63\u4E2D(1,1) 1 \u5C42\uFF1B\u53F3\u524D(2,0) 1 \u5C42\uFF1B(2,1) \u4E0D\u653E\u7BB1\uFF0C\u5171 8 \u7BB1\u3002"
     },
-    sheet2: {
-      name: "\u56FE\u7EB8\u4E8C\xB76\u7BB1",
-      label: "\u56FE\u7EB8\u4E8C\uFF1A6 \u7BB1\u5E26\u906E\u6321\uFF0C\u53EF\u7528\u900F\u89C6\u5206\u5C42\u70B9\u6570",
-      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u6839\u636E\u56FE\u7EB8\u627E\u51FA\u88AB\u6321\u4F4F\u7684\u7BB1\u5B50\uFF0C\u9700\u8981\u65F6\u518D\u6253\u5F00\u900F\u89C6\u3002",
-      recommendedView: "front",
+    /** 前排 2、2、1，后排左两格 2 层（右后空），共 9 箱 */
+    sheet9: {
+      name: "\u56FE\u7EB8\u4E5D\xB79\u7BB1",
+      label: "\u56FE\u7EB8\u4E5D\uFF1A\u524D\u6392\u591A\u51FA\u4E00\u683C\uFF0C\u540E\u6392\u4E24\u683C\u4ECD\u53E0\u9AD8\uFF0C\u5171 9 \u7BB1",
+      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u7167\u56FE\u642D 9 \u7BB1\uFF0C\u6CE8\u610F\u6700\u53F3\u524D\u4E00\u683C\u53EA\u6709\u4E00\u5C42\u3001\u53F3\u540E\u4E00\u683C\u4E0D\u653E\u7BB1\u3002",
+      recommendedView: "freecam",
       phases: [
-        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u5148\u627E\u4E00\u627E\uFF0C\u54EA\u4E00\u683C\u53EF\u80FD\u4F1A\u53E0\u5230 2 \u5C42\u3002" },
-        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u54EA\u4E9B\u7BB1\u5B50\u4F1A\u88AB\u524D\u9762\u7684\u7BB1\u5B50\u6321\u4F4F\uFF1F" },
-        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u642D\u51FA\u6765\u4EE5\u540E\u6362\u65B9\u5411\u89C2\u5BDF\uFF0C\u9700\u8981\u65F6\u518D\u6253\u5F00\u900F\u89C6\u3002" },
-        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u8FD9\u5F20\u56FE\u7EB8\u91CC\uFF0C\u54EA\u4E00\u7BB1\u6700\u5BB9\u6613\u88AB\u5FFD\u7565\uFF1F" }
+        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u54EA\u4E00\u683C\u53EA\u6709\u4E00\u5C42\uFF1F\u54EA\u4E00\u683C\u5728\u56FE\u4E0A\u662F\u7A7A\u7684\uFF1F" },
+        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u4ECE\u6B63\u9762\u770B\u4F1A\u4E0D\u4F1A\u5C11\u770B\u5230\u51E0\u53EA\uFF1F" },
+        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u642D\u5B8C\u6362\u4FA7\u9762\u3001\u81EA\u7531\u89C6\u89D2\u6570\u4E00\u6570\u3002" },
+        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u300C\u51F8\u51FA\u4E00\u5757\u300D\u65F6\uFF0C\u6570\u7BB1\u66F4\u5BB9\u6613\u8FD8\u662F\u66F4\u96BE\uFF1F" }
       ],
       cells: [
-        [2, 0, 3],
-        [3, 0, 3],
-        [4, 0, 3],
-        [2, 0, 4],
-        [3, 0, 4],
-        [3, 1, 3]
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [2, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 0, 1],
+        [1, 1, 1]
       ],
-      target: 6,
-      diagramBadge: "\u56FE\u7EB8\u4E8C",
-      diagramCaption: "\u4E2D\u95F4\u9760\u524D\u90A3\u4E00\u645E\u8981\u53E0 2 \u5C42\uFF1B\u865A\u7EBF\u683C\u4E0D\u653E\u7BB1\uFF0C\u5171 6 \u7BB1\u3002"
+      target: 9,
+      diagramBadge: "\u56FE\u7EB8\u4E5D",
+      diagramCaption: "\u524D\u6392\u4E09\u5217 2\u30012\u30011 \u5C42\uFF1B\u540E\u6392\u5DE6\u4E24\u5217\u5404 2 \u5C42\uFF0C\u53F3\u540E\u4E0D\u653E\uFF0C\u5171 9 \u7BB1\u3002"
+    },
+    /** 前排 2、1、1，后排 3、2、1，共 10 箱 */
+    /**
+     * 图纸十：阶梯形（3×3 区域）。矩阵「后→前」行、「左→右」列，
+     * 层高 [3,2,1] / [2,1,0] / [1,0,0]（其中 (1,1) 仅 1 箱），gx=列、gz=行，共 10 箱。
+     */
+    sheet10: {
+      name: "\u56FE\u7EB8\u5341\xB710\u7BB1",
+      label: "\u56FE\u7EB8\u5341\uFF1A\u9636\u68AF\u5F62\u4E09\u6392\u9519\u843D\uFF0C\u5171 10 \u7BB1",
+      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u6309\u53C2\u8003\u56FE\u642D\u51FA\u5DE6\u540E\u6700\u9AD8\u3001\u5411\u53F3\u5411\u524D\u9010\u5C42\u53D8\u77EE\u7684\u53F0\u9636\u5F62\uFF0C\u53EF\u7528\u900F\u89C6\u6838\u5BF9\u3002",
+      recommendedView: "freecam",
+      phases: [
+        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u54EA\u4E00\u645E\u6700\u9AD8\uFF1F\u54EA\u51E0\u683C\u662F\u7A7A\u7684\uFF1F" },
+        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u4E00\u5171\u8981\u51E0\u53EA\u7BB1\u5B50\uFF1F" },
+        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u642D\u5B8C\u8F6C\u4E00\u8F6C\uFF0C\u5BF9\u7167\u4FEF\u89C6\u56FE\u683C\u5185\u6570\u5B57\u3002" },
+        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u8FD9\u79CD\u300C\u53F0\u9636\u300D\u4ECE\u659C\u4E0A\u65B9\u770B\u50CF\u4EC0\u4E48\uFF1F" }
+      ],
+      cells: [
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 2, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [2, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 0, 1],
+        [0, 0, 2]
+      ],
+      target: 10,
+      diagramBadge: "\u56FE\u7EB8\u5341",
+      diagramCaption: "\u5C42\u9AD8\u77E9\u9635\uFF08\u540E\u2192\u524D\u4E3A\u884C\uFF0C\u5DE6\u2192\u53F3\u4E3A\u5217\uFF09\uFF1A[3,2,1] / [2,1,0] / [1,0,0]\uFF0C(1,1) \u4EC5 1 \u7BB1\uFF0C\u5171 10 \u7BB1\u3002"
+    },
+    /**
+     * 图纸十一：9 箱。(0,0)3、(1,0)2、(0,1)2；(2,0)(2,1) 各 1 箱；(0,2)(1,2) 不放；(1,1) 空。
+     */
+    sheet11: {
+      name: "\u56FE\u7EB8\u5341\u4E00\xB79\u7BB1",
+      label: "\u56FE\u7EB8\u5341\u4E00\uFF1A\u5DE6\u533A\u53E0\u9AD8\u3001(2,0)(2,1) \u5404 1 \u7BB1\uFF0C\u5171 9 \u7BB1",
+      task: "\u7814\u7A76\u4EFB\u52A1\uFF1A\u6309\u5C42\u9AD8\u793A\u610F\u642D 9 \u7BB1\uFF0C\u6CE8\u610F (1,1) \u4E0D\u653E\u7BB1\uFF0C\u524D\u6392 (0,2)(1,2) \u4E0D\u653E\u3002",
+      recommendedView: "freecam",
+      phases: [
+        { label: "\u5148\u8BFB\u56FE", prompt: "\u5148\u8BFB\u56FE\uFF1A\u54EA\u4E00\u683C\u53E0\u5F97\u6700\u9AD8\uFF1F\u54EA\u4E00\u683C\u662F\u7A7A\u7684\uFF1F" },
+        { label: "\u5148\u731C\u60F3", prompt: "\u5148\u731C\u4E00\u731C\uFF1A\u7A7A\u7684\u90A3\u4E00\u683C\u4F1A\u5F71\u54CD\u4F60\u4ECE\u6B63\u9762\u6570\u7BB1\u5417\uFF1F" },
+        { label: "\u52A8\u624B\u9A8C\u8BC1", prompt: "\u52A8\u624B\u9A8C\u8BC1\uFF1A\u642D\u5B8C\u6362\u89D2\u5EA6\uFF0C\u548C\u4FEF\u89C6\u56FE\u6570\u5B57\u6838\u5BF9\u3002" },
+        { label: "\u8BF4\u8BF4\u53D1\u73B0", prompt: "\u8BF4\u8BF4\u53D1\u73B0\uFF1A\u4E3A\u4EC0\u4E48\u56FE\u7EB8\u91CC\u8981\u7559\u4E00\u4E2A\u300C\u6D1E\u300D\uFF1F" }
+      ],
+      cells: [
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 2, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [2, 0, 0],
+        [2, 0, 1]
+      ],
+      target: 9,
+      diagramBadge: "\u56FE\u7EB8\u5341\u4E00",
+      diagramCaption: "(0,0)3\u3001(1,0)2\u3001(0,1)2\uFF1B(2,0)(2,1) \u5404 1 \u7BB1\uFF1B(0,2)(1,2) \u4E0D\u653E\uFF1B(1,1) \u4E0D\u653E\uFF0C\u5171 9 \u7BB1\u3002"
     }
   };
   var canvas = document.getElementById("c");
@@ -20291,6 +20362,7 @@
   var btnXray = document.getElementById("btn-xray");
   var btnPlace = document.getElementById("btn-place");
   var btnRemove = document.getElementById("btn-remove");
+  var btnCountMode = document.getElementById("btn-count-mode");
   var btnReset = document.getElementById("btn-reset");
   var btnFront = document.getElementById("btn-front");
   var btnSide = document.getElementById("btn-side");
@@ -20331,7 +20403,8 @@
     btnTeacherMode,
     btnPhaseNext,
     btnTopPanelToggle,
-    btnTopPanelSummary
+    btnTopPanelSummary,
+    btnCountMode
   ].filter(Boolean);
   var state = {
     mode: "place",
@@ -20350,7 +20423,9 @@
     teacherMode: false,
     researchPhase: 0,
     topPanelCollapsed: IS_COARSE_POINTER && window.innerWidth <= TOP_PANEL_TOUCH_AUTO_COLLAPSE_MAX_W,
-    toolSheetOpen: false
+    toolSheetOpen: false,
+    /** 幼儿「数箱子」：禁止再放/拿，点箱变色表示已数过 */
+    countingMode: false
   };
   var scene = new Scene();
   var SKY = 2838115;
@@ -20401,8 +20476,8 @@
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
-  controls.minDistance = 7;
-  controls.maxDistance = 30;
+  controls.minDistance = 4.2;
+  controls.maxDistance = 22;
   controls.maxPolarAngle = Math.PI * 0.495;
   controls.rotateSpeed = IS_COARSE_POINTER ? 0.92 : 1;
   controls.zoomSpeed = 0.95;
@@ -20451,18 +20526,27 @@
   var boxGeo = new BoxGeometry(CELL * 0.92, CELL * 0.92, CELL * 0.92);
   var edgeGeo = new EdgesGeometry(boxGeo);
   var OUTLINE_COLOR = 4861984;
-  var XRAY_MESH_OPACITY = 0.2;
-  var XRAY_MESH_EMISSIVE = 4885704;
-  var XRAY_MESH_EMISSIVE_INTENSITY = 0.48;
-  var XRAY_LINE_OPACITY = 0.92;
-  var XRAY_LINE_COLOR = 15786188;
-  var CARTOON_CRATE_HEX = [
-    16756872,
-    16770406,
-    8315056,
-    16752328,
-    9426175,
-    14989567
+  var XRAY_LINE_OPACITY = 0.82;
+  var XRAY_LINE_COLOR = 16116952;
+  var XRAY_SHELL_OPACITY = 0.15;
+  var XRAY_SHELL_SCALE = 1.012;
+  var CRATE_PALETTE_HEX = [
+    15759446,
+    15769648,
+    15253560,
+    12109896,
+    7389296,
+    5290136,
+    4763856,
+    5804264,
+    7895272,
+    11036888,
+    13656224,
+    15231096,
+    14194784,
+    9482352,
+    6856904,
+    12097680
   ];
   var crateTextureCache = [];
   function hexToRgb(hex) {
@@ -20553,19 +20637,23 @@
     ctx.stroke();
     return makeCanvasTexture(canvas2);
   }
-  function getCrateTexturePair(colorIndex) {
-    if (!crateTextureCache[colorIndex]) {
-      const hex = CARTOON_CRATE_HEX[colorIndex % CARTOON_CRATE_HEX.length];
-      crateTextureCache[colorIndex] = {
+  function cratePaletteIndex(gx, gz) {
+    return gx + gz * GRID;
+  }
+  function getCrateTexturePair(paletteIndex) {
+    const idx = paletteIndex % CRATE_PALETTE_HEX.length;
+    if (!crateTextureCache[idx]) {
+      const hex = CRATE_PALETTE_HEX[idx];
+      crateTextureCache[idx] = {
         side: buildCrateSideTexture(hex),
         top: buildCrateTopTexture(hex)
       };
     }
-    return crateTextureCache[colorIndex];
+    return crateTextureCache[idx];
   }
   function createFruitCrateMaterials(gx, gy, gz) {
-    const colorIndex = (gx + gz * 3 + gy * 5) % CARTOON_CRATE_HEX.length;
-    const { side: sideMap, top: topMap } = getCrateTexturePair(colorIndex);
+    const paletteIndex = cratePaletteIndex(gx, gz);
+    const { side: sideMap, top: topMap } = getCrateTexturePair(paletteIndex);
     const wood = new MeshStandardMaterial({
       map: sideMap,
       roughness: 0.88,
@@ -20587,6 +20675,19 @@
     const mats = [wood, wood, topM, bottomM, wood, wood];
     return mats.map((m) => m.clone());
   }
+  function createXrayTintShellMaterial(paletteIndex) {
+    const hex = CRATE_PALETTE_HEX[paletteIndex % CRATE_PALETTE_HEX.length];
+    const c = new Color(hex);
+    c.lerp(new Color(12888194), 0.42);
+    return new MeshBasicMaterial({
+      color: c,
+      transparent: true,
+      opacity: XRAY_SHELL_OPACITY,
+      depthWrite: false,
+      depthTest: true,
+      fog: true
+    });
+  }
   var DIAGRAM_FILLS = [
     "#ffb088",
     "#ffe566",
@@ -20595,6 +20696,8 @@
     "#8fd4ff",
     "#e4b8ff"
   ];
+  var COUNT_MODE_TINT = new Color(2278750);
+  var COUNT_MODE_COLOR_MIX = 0.88;
   var cubes = /* @__PURE__ */ new Map();
   var raycaster = new Raycaster();
   var pointer = new Vector2();
@@ -20619,11 +20722,19 @@
     feedbackEl.dataset.tone = tone;
   }
   function getDefaultFeedbackTone() {
+    if (state.countingMode) return "info";
+    if (isDiagramSheetKey(state.currentKey)) return "info";
     return state.mode === "place" ? "place" : "remove";
   }
   function getDefaultFeedback() {
     if (state.contextLost) {
       return "3D \u753B\u9762\u6062\u590D\u4E2D\uFF0C\u8BF7\u7A0D\u7B49\u3002";
+    }
+    if (state.countingMode) {
+      return "\u6570\u7BB1\u5B50\u6A21\u5F0F\uFF1A\u8F7B\u70B9\u6BCF\u53EA\u7BB1\u5B50\uFF0C\u53D8\u8272\u8868\u793A\u4F60\u5DF2\u7ECF\u6570\u8FC7\uFF1B\u4E0D\u80FD\u518D\u653E\u65B0\u7BB1\u3002";
+    }
+    if (isDiagramSheetKey(state.currentKey)) {
+      return "\u5F53\u524D\u4E3A\u56FE\u7EB8\u60C5\u5883\uFF1A\u53EF\u8F6C\u52A8\u89C6\u89D2\u89C2\u6469\uFF0C\u4E0D\u80FD\u653E\u7BB1\u6216\u62FF\u7BB1\u3002\u9700\u8981\u642D\u5EFA\u65F6\u8BF7\u70B9\u300C\u6E05\u7A7A\xB7\u81EA\u7531\u5806\u300D\u7B49\u4EFB\u52A1\u3002";
     }
     return state.mode === "place" ? "\u8F7B\u70B9\u7A7A\u4F4D\u7F6E\u6216\u7BB1\u5B50\u9876\u9762\uFF0C\u653E\u4E0A\u4E00\u4E2A\u65B0\u7BB1\u5B50\u3002" : "\u8F7B\u70B9\u6700\u4E0A\u9762\u7684\u7BB1\u5B50\uFF0C\u628A\u5B83\u62FF\u4E0B\u6765\u3002";
   }
@@ -20807,6 +20918,13 @@
     }
   }
   function setTeacherMode(enabled, { announce = true } = {}) {
+    if (enabled && state.countingMode) {
+      state.countingMode = false;
+      clearAllCountedMarks();
+      if (!state.contextLost) {
+        restoreDefaultFeedback();
+      }
+    }
     state.teacherMode = enabled;
     syncTeacherModeUI();
     if (enabled) {
@@ -20815,6 +20933,7 @@
       maybeCollapseTopPanel();
     }
     syncTopPanelVisibility();
+    syncCountingModeUI();
     if (announce) {
       showFeedback(
         enabled ? "\u6559\u5E08\u6A21\u5F0F\u5DF2\u5F00\u542F\uFF0C\u53EF\u5207\u6362\u4EFB\u52A1\u3001\u89C6\u89D2\u548C\u7814\u7A76\u6B65\u9AA4\uFF1B\u4E5F\u53EF\u70B9\u300C\u6536\u8D77\u300D\u817E\u51FA\u753B\u9762\u3002" : "\u5DF2\u56DE\u5230\u5E7C\u513F\u6A21\u5F0F\uFF0C\u53EA\u4FDD\u7559\u6838\u5FC3\u64CD\u4F5C\u3002",
@@ -20845,9 +20964,24 @@
     });
   }
   function updateModeUI() {
-    const isPlace = state.mode === "place";
-    if (btnPlace) btnPlace.setAttribute("aria-pressed", isPlace ? "true" : "false");
-    if (btnRemove) btnRemove.setAttribute("aria-pressed", isPlace ? "false" : "true");
+    const sheetReadonly = isDiagramSheetKey(state.currentKey);
+    const blocked = state.contextLost || state.countingMode || sheetReadonly;
+    if (btnPlace) {
+      btnPlace.disabled = blocked;
+      if (state.countingMode || sheetReadonly) {
+        btnPlace.setAttribute("aria-pressed", "false");
+      } else {
+        btnPlace.setAttribute("aria-pressed", state.mode === "place" ? "true" : "false");
+      }
+    }
+    if (btnRemove) {
+      btnRemove.disabled = blocked;
+      if (state.countingMode || sheetReadonly) {
+        btnRemove.setAttribute("aria-pressed", "false");
+      } else {
+        btnRemove.setAttribute("aria-pressed", state.mode === "place" ? "false" : "true");
+      }
+    }
   }
   function setMode(nextMode, { announce = true } = {}) {
     state.mode = nextMode;
@@ -20862,43 +20996,128 @@
       restoreDefaultFeedback();
     }
   }
-  function applyXrayToGroup(group, enabled) {
+  function isXrayGhostRow(gx, gz) {
+    if (state.activeCamera === "side") {
+      return gx === GRID - 1;
+    }
+    return gz === GRID - 1;
+  }
+  function applyXrayToGroup(group, xrayOn) {
+    const { gx, gz } = group.userData;
+    const ghost = !!xrayOn && isXrayGhostRow(gx, gz);
     const applyMat = (material) => {
-      material.transparent = enabled;
-      material.opacity = enabled ? XRAY_MESH_OPACITY : 1;
-      material.depthWrite = !enabled;
-      if (material.isMeshStandardMaterial) {
-        if (enabled) {
-          if (!material.userData.xraySaved) {
-            material.userData.xraySaved = {
-              emissive: material.emissive.clone(),
-              emissiveIntensity: material.emissiveIntensity
-            };
+      if (ghost) {
+        if (!material.userData.xraySaved) {
+          material.userData.xraySaved = {
+            transparent: material.transparent,
+            opacity: material.opacity,
+            depthWrite: material.depthWrite,
+            colorWrite: material.colorWrite
+          };
+          if (material.isMeshStandardMaterial) {
+            material.userData.xraySaved.emissive = material.emissive.clone();
+            material.userData.xraySaved.emissiveIntensity = material.emissiveIntensity;
           }
-          material.emissive.setHex(XRAY_MESH_EMISSIVE);
-          material.emissiveIntensity = XRAY_MESH_EMISSIVE_INTENSITY;
-        } else if (material.userData.xraySaved) {
-          const saved = material.userData.xraySaved;
+        }
+        material.transparent = false;
+        material.opacity = 1;
+        material.depthWrite = false;
+        material.colorWrite = false;
+        if (material.isMeshStandardMaterial) {
+          material.emissive.setHex(0);
+          material.emissiveIntensity = 0;
+        }
+      } else if (material.userData.xraySaved) {
+        const saved = material.userData.xraySaved;
+        material.transparent = saved.transparent;
+        material.opacity = saved.opacity;
+        material.depthWrite = saved.depthWrite;
+        material.colorWrite = saved.colorWrite;
+        if (material.isMeshStandardMaterial && saved.emissive) {
           material.emissive.copy(saved.emissive);
           material.emissiveIntensity = saved.emissiveIntensity;
         }
       }
     };
     group.traverse((object) => {
+      if (object.name === "crateXrayShell" && object.isMesh && object.material) {
+        const sm = object.material;
+        object.visible = ghost;
+        if (ghost) {
+          if (!sm.userData.xrayShellSaved) {
+            sm.userData.xrayShellSaved = { depthTest: sm.depthTest };
+          }
+          sm.depthTest = false;
+        } else if (sm.userData.xrayShellSaved) {
+          sm.depthTest = sm.userData.xrayShellSaved.depthTest;
+        }
+        return;
+      }
       if (object.isLineSegments && object.material) {
         const m = object.material;
-        m.transparent = true;
-        m.depthWrite = !enabled;
-        if (enabled) {
+        if (ghost) {
+          if (!m.userData.xrayLineSaved) {
+            m.userData.xrayLineSaved = {
+              transparent: m.transparent,
+              opacity: m.opacity,
+              color: m.color.clone(),
+              depthWrite: m.depthWrite,
+              depthTest: m.depthTest,
+              polygonOffset: m.polygonOffset,
+              polygonOffsetFactor: m.polygonOffsetFactor,
+              polygonOffsetUnits: m.polygonOffsetUnits
+            };
+          }
+          m.transparent = true;
+          m.depthWrite = false;
+          m.depthTest = false;
           m.opacity = XRAY_LINE_OPACITY;
           m.color.setHex(XRAY_LINE_COLOR);
+          m.polygonOffset = true;
+          m.polygonOffsetFactor = -1;
+          m.polygonOffsetUnits = -1;
+          object.renderOrder = 1;
+        } else if (m.userData.xrayLineSaved) {
+          const s = m.userData.xrayLineSaved;
+          m.transparent = s.transparent;
+          m.opacity = s.opacity;
+          m.color.copy(s.color);
+          m.depthWrite = s.depthWrite;
+          m.depthTest = s.depthTest;
+          m.polygonOffset = s.polygonOffset;
+          m.polygonOffsetFactor = s.polygonOffsetFactor;
+          m.polygonOffsetUnits = s.polygonOffsetUnits;
+          object.renderOrder = 0;
         } else {
+          m.transparent = true;
           m.opacity = 0.92;
           m.color.setHex(OUTLINE_COLOR);
+          m.depthWrite = true;
+          m.depthTest = true;
+          m.polygonOffset = false;
+          m.polygonOffsetFactor = 0;
+          m.polygonOffsetUnits = 0;
+          object.renderOrder = 0;
         }
         return;
       }
       if (!object.isMesh || !object.material) return;
+      if (object.name === "cratePick") {
+        if (ghost) {
+          if (!object.userData.xrayShadowSaved) {
+            object.userData.xrayShadowSaved = {
+              castShadow: object.castShadow,
+              receiveShadow: object.receiveShadow
+            };
+          }
+          object.castShadow = false;
+          object.receiveShadow = false;
+        } else if (object.userData.xrayShadowSaved) {
+          const sh = object.userData.xrayShadowSaved;
+          object.castShadow = sh.castShadow;
+          object.receiveShadow = sh.receiveShadow;
+        }
+      }
       if (Array.isArray(object.material)) {
         object.material.forEach(applyMat);
       } else {
@@ -20915,7 +21134,7 @@
     cubes.forEach((group) => applyXrayToGroup(group, enabled));
     if (announce) {
       showFeedback(
-        enabled ? "\u900F\u89C6\u5DF2\u6253\u5F00\uFF0C\u53EF\u4EE5\u770B\u5230\u540E\u9762\u7684\u7BB1\u5B50\u3002" : "\u900F\u89C6\u5DF2\u5173\u95ED\uFF0C\u6062\u590D\u666E\u901A\u89C2\u5BDF\u3002",
+        enabled ? "\u900F\u89C6\u5DF2\u6253\u5F00\uFF1A\u53EA\u865A\u5316\u9760\u5916\u4E00\u6392\uFF0C\u540E\u6392\u4ECD\u5B9E\u4F53\u8272\uFF1B\u6BCF\u683C\u6728\u7BB1\u989C\u8272\u4E0D\u540C\u4FBF\u4E8E\u8FA8\u8BA4\u3002" : "\u900F\u89C6\u5DF2\u5173\u95ED\uFF0C\u6062\u590D\u666E\u901A\u89C2\u5BDF\u3002",
         enabled ? "success" : "info"
       );
       if (enabled) {
@@ -21019,6 +21238,16 @@
     mesh.receiveShadow = true;
     mesh.name = "cratePick";
     group.add(mesh);
+    const shell = new Mesh(boxGeo, createXrayTintShellMaterial(cratePaletteIndex(gx, gz)));
+    shell.name = "crateXrayShell";
+    shell.scale.setScalar(XRAY_SHELL_SCALE);
+    shell.visible = false;
+    shell.castShadow = false;
+    shell.receiveShadow = false;
+    shell.renderOrder = -1;
+    shell.raycast = () => {
+    };
+    group.add(shell);
     const edges = new LineSegments(
       edgeGeo,
       new LineBasicMaterial({
@@ -21029,7 +21258,7 @@
     );
     group.add(edges);
     group.position.copy(worldPos(gx, gy, gz));
-    group.userData = { gx, gy, gz, key, pickMesh: mesh };
+    group.userData = { gx, gy, gz, key, pickMesh: mesh, counted: false };
     scene.add(group);
     cubes.set(key, group);
     applyXrayToGroup(group, state.xray);
@@ -21079,6 +21308,7 @@
     return { ok: true, key };
   }
   function clearAll() {
+    clearAllCountedMarks();
     const sorted = [...cubes.keys()].map((key) => key.split(",").map(Number)).sort((left, right) => right[1] - left[1]);
     sorted.forEach(([gx, gy, gz]) => {
       removeCube(gx, gy, gz);
@@ -21113,6 +21343,14 @@
     return `\u62FF\u8D70\u4E00\u4E2A\u7BB1\u5B50\uFF0C\u73B0\u5728\u8FD8\u591A\u51FA ${cubes.size - target} \u7BB1\u3002`;
   }
   function placeCubeWithHistory(gx, gy, gz) {
+    if (state.countingMode) {
+      showFeedback("\u6570\u7BB1\u5B50\u6A21\u5F0F\u4E0B\u4E0D\u80FD\u518D\u653E\u65B0\u7BB1\uFF0C\u8BF7\u5148\u9000\u51FA\u6570\u7BB1\u5B50\u3002", "warn", 2200);
+      return false;
+    }
+    if (isDiagramSheetKey(state.currentKey)) {
+      showFeedback("\u56FE\u7EB8\u60C5\u5883\u4E0B\u4E0D\u80FD\u653E\u7BB1\uFF0C\u8BF7\u5148\u5207\u6362\u5230\u300C\u6E05\u7A7A\xB7\u81EA\u7531\u5806\u300D\u7B49\u4EFB\u52A1\u3002", "warn", 2200);
+      return false;
+    }
     const snapshot = captureState();
     const result = addCube(gx, gy, gz);
     if (!result.ok) {
@@ -21127,6 +21365,14 @@
     return true;
   }
   function removeCubeWithHistory(gx, gy, gz) {
+    if (state.countingMode) {
+      showFeedback("\u6570\u7BB1\u5B50\u6A21\u5F0F\u4E0B\u4E0D\u80FD\u62FF\u8D70\u7BB1\u5B50\uFF0C\u8BF7\u5148\u9000\u51FA\u6570\u7BB1\u5B50\u3002", "warn", 2200);
+      return false;
+    }
+    if (isDiagramSheetKey(state.currentKey)) {
+      showFeedback("\u56FE\u7EB8\u60C5\u5883\u4E0B\u4E0D\u80FD\u62FF\u7BB1\uFF0C\u8BF7\u5148\u5207\u6362\u5230\u300C\u6E05\u7A7A\xB7\u81EA\u7531\u5806\u300D\u7B49\u4EFB\u52A1\u3002", "warn", 2200);
+      return false;
+    }
     const snapshot = captureState();
     const result = removeCube(gx, gy, gz);
     if (!result.ok) {
@@ -21215,8 +21461,11 @@
     parts.push("</svg>");
     return parts.join("");
   }
+  function isDiagramSheetKey(key) {
+    return key === "sheet8" || key === "sheet9" || key === "sheet10" || key === "sheet11";
+  }
   function syncSheetPanel(key) {
-    const show = key === "sheet1" || key === "sheet2";
+    const show = isDiagramSheetKey(key);
     overlayTop == null ? void 0 : overlayTop.classList.toggle("overlay__top--diagram", show);
     if (!sheetPanel) return;
     if (!show) {
@@ -21243,9 +21492,11 @@
     syncSheetPanel(state.currentKey);
     updateSceneButtons();
     updateCountUI();
+    syncCountingModeUI();
   }
   function clearSceneBoxesWithHistory() {
     if (state.contextLost) return;
+    setCountingMode(false, { announce: false });
     if (cubes.size === 0) {
       showFeedback("\u573A\u5730\u5DF2\u7ECF\u662F\u7A7A\u7684\u3002", "info", 1200);
       return;
@@ -21265,6 +21516,7 @@
   function applyPresetState(key) {
     const preset = PRESETS[key];
     if (!preset) return false;
+    setCountingMode(false, { announce: false });
     state.currentKey = key;
     state.researchPhase = 0;
     clearAll();
@@ -21280,6 +21532,7 @@
   }
   function restoreSnapshot(snapshot) {
     var _a2;
+    setCountingMode(false, { announce: false });
     state.currentKey = snapshot.key;
     state.researchPhase = (_a2 = snapshot.phase) != null ? _a2 : 0;
     clearAll();
@@ -21350,6 +21603,105 @@
       gz: clampGrid(Math.round(pz / CELL))
     };
   }
+  function clearAllCountedMarks() {
+    cubes.forEach((group) => {
+      group.userData.counted = false;
+      group.traverse((obj) => {
+        if (!obj.isMesh || !obj.material) return;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((m) => {
+          if (m.isMeshStandardMaterial && m.userData.countBaseColor) {
+            m.color.copy(m.userData.countBaseColor);
+            delete m.userData.countBaseColor;
+          }
+        });
+      });
+    });
+  }
+  function applyCountedVisualToGroup(group) {
+    group.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach((m) => {
+        if (!m.isMeshStandardMaterial || !m.color) return;
+        if (!m.userData.countBaseColor) {
+          m.userData.countBaseColor = m.color.clone();
+        }
+        m.color.copy(m.userData.countBaseColor).lerp(COUNT_MODE_TINT, COUNT_MODE_COLOR_MIX);
+      });
+    });
+  }
+  function countMarkedCubes() {
+    let n = 0;
+    cubes.forEach((g) => {
+      if (g.userData.counted) n += 1;
+    });
+    return n;
+  }
+  function tryMarkCountedFromRay() {
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(pickMeshes(), false);
+    if (!hits.length) {
+      showFeedback("\u8BF7\u70B9\u5728\u7BB1\u5B50\u4E0A\u3002", "warn", 1600);
+      return;
+    }
+    let root = hits[0].object;
+    while (root.parent && root.userData.gx == null) {
+      root = root.parent;
+    }
+    const data = root.userData;
+    if (!data || data.gx == null) return;
+    const group = cubes.get(keyOf(data.gx, data.gy, data.gz));
+    if (!group) return;
+    if (group.userData.counted) {
+      showFeedback("\u8FD9\u53EA\u7BB1\u5B50\u5DF2\u7ECF\u6570\u8FC7\u4E86\u3002", "info", 1400);
+      return;
+    }
+    group.userData.counted = true;
+    applyCountedVisualToGroup(group);
+    const marked = countMarkedCubes();
+    const total = cubes.size;
+    showFeedback(`\u5DF2\u6807\u8BB0\u8FD9\u4E00\u7BB1\u3002\u5DF2\u6570\u6807\u8BB0 ${marked} / ${total} \u7BB1\u3002`, "success", 1800);
+  }
+  function setCountingMode(enabled, { announce = true } = {}) {
+    if (enabled && state.teacherMode) return;
+    if (state.countingMode === enabled) {
+      syncCountingModeUI();
+      return;
+    }
+    state.countingMode = enabled;
+    if (!enabled) {
+      clearAllCountedMarks();
+    }
+    syncCountingModeUI();
+    clearResetConfirm();
+    if (announce) {
+      if (enabled) {
+        showFeedback(
+          "\u5DF2\u8FDB\u5165\u6570\u7BB1\u5B50\u6A21\u5F0F\uFF1A\u4E0D\u80FD\u518D\u653E\u65B0\u7BB1\u3002\u8BF7\u5E7C\u513F\u4F9D\u6B21\u8F7B\u70B9\u6BCF\u4E00\u53EA\u7BB1\u5B50\uFF0C\u53D8\u8272\u8868\u793A\u5DF2\u6570\u8FC7\u3002",
+          "info",
+          3200
+        );
+      } else {
+        showFeedback("\u5DF2\u9000\u51FA\u6570\u7BB1\u5B50\u6A21\u5F0F\u3002", "success", 2e3);
+      }
+    } else if (!state.contextLost) {
+      restoreDefaultFeedback();
+    }
+  }
+  function syncCountingModeUI() {
+    if (btnCountMode) {
+      btnCountMode.hidden = state.teacherMode;
+      btnCountMode.setAttribute("aria-pressed", state.countingMode ? "true" : "false");
+      btnCountMode.classList.toggle("is-active", state.countingMode);
+      btnCountMode.title = state.countingMode ? "\u9000\u51FA\u6570\u7BB1\u5B50" : "\u6570\u7BB1\u5B50";
+      btnCountMode.setAttribute(
+        "aria-label",
+        state.countingMode ? "\u9000\u51FA\u6570\u7BB1\u5B50\u6A21\u5F0F\uFF0C\u6062\u590D\u653E\u7BB1\u4E0E\u62FF\u7BB1" : "\u6570\u7BB1\u5B50\uFF1A\u70B9\u7BB1\u53D8\u8272\u8868\u793A\u5DF2\u6570\u8FC7\uFF0C\u4E0D\u80FD\u518D\u653E\u65B0\u7BB1"
+      );
+    }
+    updateModeUI();
+  }
   function ndcFromEvent(event) {
     const rect = canvas.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width * 2 - 1;
@@ -21357,6 +21709,7 @@
     pointer.set(x, y);
   }
   function tryPlaceFromRay() {
+    if (state.countingMode || isDiagramSheetKey(state.currentKey)) return;
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(pickMeshes(), false);
     if (hits.length) {
@@ -21386,6 +21739,7 @@
     showFeedback("\u8BF7\u70B9\u5728\u4ED3\u5E93\u5730\u9762\u91CC\u3002", "warn");
   }
   function tryRemoveFromRay() {
+    if (state.countingMode || isDiagramSheetKey(state.currentKey)) return;
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(pickMeshes(), false);
     if (!hits.length) {
@@ -21419,6 +21773,13 @@
       return;
     }
     ndcFromEvent(event);
+    if (state.countingMode) {
+      tryMarkCountedFromRay();
+      return;
+    }
+    if (isDiagramSheetKey(state.currentKey)) {
+      return;
+    }
     if (state.mode === "place") {
       tryPlaceFromRay();
     } else {
@@ -21470,6 +21831,9 @@
       camera.position.copy(next.position);
       controls.target.copy(next.target);
       controls.update();
+    }
+    if (state.xray) {
+      cubes.forEach((g) => applyXrayToGroup(g, true));
     }
     if (announce) {
       showFeedback(next.message, "success", 1600);
@@ -21628,12 +21992,16 @@
     maybeCloseToolSheet();
   });
   btnPlace == null ? void 0 : btnPlace.addEventListener("click", () => {
-    if (state.contextLost) return;
+    if (state.contextLost || state.countingMode || isDiagramSheetKey(state.currentKey)) return;
     setMode("place");
   });
   btnRemove == null ? void 0 : btnRemove.addEventListener("click", () => {
-    if (state.contextLost) return;
+    if (state.contextLost || state.countingMode || isDiagramSheetKey(state.currentKey)) return;
     setMode("remove");
+  });
+  btnCountMode == null ? void 0 : btnCountMode.addEventListener("click", () => {
+    if (state.contextLost || state.teacherMode) return;
+    setCountingMode(!state.countingMode);
   });
   btnReset == null ? void 0 : btnReset.addEventListener("click", () => {
     requestResetCurrent();
@@ -21715,6 +22083,7 @@
     startRenderLoop();
   });
   setControlsDisabled(false);
+  syncCountingModeUI();
   syncTeacherModeUI();
   setToolSheetOpen(state.toolSheetOpen);
   syncTopPanelForViewport();

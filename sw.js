@@ -1,4 +1,4 @@
-const CACHE = "harvest-orchard-v23";
+const CACHE = "harvest-orchard-v46"
 
 const PRECACHE_URLS = [
   "index.html",
@@ -29,7 +29,7 @@ self.addEventListener("install", (event) => {
  * Some static hosts apply SPA fallback so *.js URLs return index.html (200 + text/html).
  * cache.add() would store that HTML and break ES module loads — validate before caching.
  */
-async function precacheOne(scope, cache, path) {
+async function precacheOne (scope, cache, path) {
   const url = new URL(path, scope).toString();
   try {
     const res = await fetch(url, { cache: "reload" });
@@ -45,14 +45,57 @@ async function precacheOne(scope, cache, path) {
   }
 }
 
-function isScriptPath(path) {
+function isScriptPath (path) {
   return /\.(js|mjs)$/i.test(path);
 }
 
-function cachedScriptLooksPoisoned(response) {
+function cachedScriptLooksPoisoned (response) {
   if (!response) return false;
   const ct = (response.headers.get("content-type") || "").toLowerCase();
   return ct.includes("text/html");
+}
+
+/** Same URL without ?query so precached bare paths still match offline. */
+function urlWithoutSearch (requestUrl) {
+  const u = new URL(requestUrl);
+  u.search = "";
+  return u.toString();
+}
+
+function usesNetworkFirst (path) {
+  return isScriptPath(path) || /\.css$/i.test(path);
+}
+
+/**
+ * JS / CSS: network first so deploys pick up new file-bundle.js & styles.css
+ * without relying only on CACHE bumps; fall back to precache when offline.
+ */
+async function networkFirstScript (event) {
+  try {
+    /* reload: 绕过浏览器 HTTP 缓存，否则 SW 已网络优先仍可能拿到旧 styles.css / JS */
+    const res = await fetch(event.request, { cache: "reload" });
+    if (res.ok) {
+      const ct = (res.headers.get("content-type") || "").toLowerCase();
+      if (!ct.includes("text/html")) {
+        const cache = await caches.open(CACHE);
+        await cache.put(event.request, res.clone());
+        return res;
+      }
+    }
+  } catch (_) {
+    // offline or network error — use cache below
+  }
+
+  let cached = await caches.match(event.request);
+  if (cached && !cachedScriptLooksPoisoned(cached)) return cached;
+  cached = await caches.match(urlWithoutSearch(event.request.url));
+  if (cached && !cachedScriptLooksPoisoned(cached)) return cached;
+
+  try {
+    return await fetch(event.request, { cache: "reload" });
+  } catch {
+    return cached || new Response("", { status: 503, statusText: "Offline" });
+  }
 }
 
 self.addEventListener("activate", (event) => {
@@ -82,19 +125,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const path = url.pathname;
+  if (usesNetworkFirst(path)) {
+    event.respondWith(networkFirstScript(event));
+    return;
+  }
+
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
-      const path = url.pathname;
-      if (
-        cached &&
-        isScriptPath(path) &&
-        cachedScriptLooksPoisoned(cached)
-      ) {
-        const cache = await caches.open(CACHE);
-        await cache.delete(event.request);
-        return fetch(event.request);
-      }
       if (cached) return cached;
       return fetch(event.request);
     })()

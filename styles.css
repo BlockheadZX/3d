@@ -154,8 +154,9 @@ body {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: stretch;
+  min-height: 0;
   pointer-events: none;
 }
 
@@ -165,10 +166,15 @@ body {
   width: 100%;
   padding: calc(var(--ui-pad-top) + 4px) var(--ui-pad-x-right) 0 var(--ui-pad-x);
   pointer-events: none;
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
-.overlay__top > * {
+.overlay__top>* {
   pointer-events: auto;
 }
 
@@ -613,23 +619,24 @@ body {
   position: relative;
   pointer-events: none;
   flex-shrink: 0;
-  margin-top: auto;
   padding: 0 var(--ui-pad-x-right) calc(10px + var(--ui-pad-bottom)) var(--ui-pad-x);
 }
 
 .dock__feedback {
   pointer-events: auto;
+  position: relative;
+  z-index: 1;
   width: min(100%, 460px);
-  margin: 0 0 6px;
-  min-height: 36px;
-  padding: 7px 11px;
+  margin: 0 0 8px;
+  min-height: 42px;
+  padding: 10px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(11, 20, 31, 0.76);
-  color: #e7f0f8;
-  font-size: clamp(0.76rem, 1.9vw, 0.88rem);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 20, 31, 0.88);
+  color: #f2f7fc;
+  font-size: clamp(0.8rem, 2vw, 0.92rem);
   font-weight: 700;
-  line-height: 1.38;
+  line-height: 1.45;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -660,14 +667,23 @@ body {
   border-color: rgba(155, 236, 209, 0.22);
 }
 
+/* 触控平板：隐藏底栏上方说明条，减少遮挡、留出操作空间 */
+@media (pointer: coarse) and (min-width: 600px) {
+  .dock__feedback {
+    display: none !important;
+  }
+}
+
 .control-bar {
   pointer-events: auto;
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  gap: 6px;
-  align-items: stretch;
-  padding: 6px 7px;
-  border-radius: 16px;
+  grid-template-columns: max-content auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 12px;
+  border-radius: 18px;
   background: rgba(12, 21, 32, 0.84);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
@@ -675,15 +691,48 @@ body {
   -webkit-backdrop-filter: blur(16px);
 }
 
+.dock-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: 100%;
+}
+
 .mode-switch {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: 100%;
+}
+
+/* 放箱 / 拿箱 / 数箱子：胶囊形，宽度随图标而非拉满整格 */
+.mode-switch .btn--dock-icon,
+.dock-modes > .btn-counting.btn--dock-icon {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  min-width: 64px;
+  min-height: 64px;
+  aspect-ratio: 1;
+  padding: 0;
+}
+
+.btn-counting {
+  font-weight: 800;
+}
+
+.btn-counting.is-active {
+  box-shadow: 0 0 0 2px rgba(120, 200, 255, 0.45);
+  border-color: rgba(130, 210, 255, 0.75);
+  color: #e8f4ff;
 }
 
 .btn-mode {
-  min-width: 0;
   font-weight: 800;
 }
 
@@ -710,17 +759,18 @@ body {
   color: #fdeee8;
 }
 
-/* 底部控制栏：纯图标按钮 */
+/* 底部控制栏：纯图标按钮（加大触控区，方便幼儿点击） */
 .btn--dock-icon {
   justify-content: center;
-  padding: 6px 8px;
-  min-width: 40px;
+  padding: 14px 16px;
+  min-width: 64px;
+  min-height: 64px;
 }
 
 .btn__dock-svg {
   display: block;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   pointer-events: none;
 }
@@ -740,8 +790,9 @@ body {
 .btn--dock-icon.btn-undo,
 .btn--dock-icon.btn-clear,
 .btn--dock-icon.btn-tools {
-  min-width: 40px;
-  padding-inline: 8px;
+  min-width: 64px;
+  min-height: 64px;
+  padding-inline: 16px;
 }
 
 .tool-sheet {
@@ -968,7 +1019,9 @@ body {
 
   .dock__feedback {
     margin-left: auto;
-    padding: 8px 12px;
+    min-height: 44px;
+    padding: 10px 14px;
+    max-width: min(100%, 520px);
   }
 
   .tool-sheet {
@@ -1030,33 +1083,52 @@ body {
   }
 
   .dock__feedback {
-    padding: 8px 12px;
-    font-size: clamp(0.84rem, 2.4vw, 0.96rem);
+    min-height: 46px;
+    padding: 11px 14px;
+    font-size: clamp(0.86rem, 2.4vw, 0.98rem);
   }
 
   .control-bar {
-    gap: 6px;
-    padding: 6px 7px;
+    gap: 10px;
+    padding: 10px 10px;
   }
 
   .btn {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 8px 12px;
+    min-height: 46px;
+    min-width: 46px;
+    padding: 10px 14px;
     font-size: clamp(0.8rem, 2.3vw, 0.94rem);
   }
 
   .btn-tools,
   .btn-undo,
   .btn-clear {
-    min-width: 44px;
+    min-width: 52px;
+  }
+
+  .btn--dock-icon {
+    min-width: 70px;
+    min-height: 70px;
+    padding: 16px 18px;
+  }
+
+  .mode-switch .btn--dock-icon {
+    min-width: 70px;
+    min-height: 70px;
+    padding: 0;
+  }
+
+  .btn__dock-svg {
+    width: 34px;
+    height: 34px;
   }
 
   .btn--dock-icon.btn-undo,
   .btn--dock-icon.btn-clear,
   .btn--dock-icon.btn-tools {
-    min-width: 44px;
-    padding-inline: 7px;
+    min-width: 70px;
+    min-height: 70px;
+    padding-inline: 16px;
   }
 
   .tool-sheet {
@@ -1110,10 +1182,23 @@ body {
 
   .control-bar {
     grid-template-columns: 1fr 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .dock-modes {
+    grid-column: 1 / -1;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
   }
 
   .mode-switch {
-    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .mode-switch .btn--dock-icon,
+  .dock-modes > .btn-counting.btn--dock-icon {
+    aspect-ratio: 1;
   }
 
   .btn-undo,
@@ -1244,17 +1329,35 @@ body {
   }
 
   .dock__feedback {
-    min-height: 34px;
-    padding: 6px 9px;
-    margin-bottom: 6px;
-    font-size: 0.72rem;
-    line-height: 1.4;
+    min-height: 40px;
+    padding: 8px 11px;
+    margin-bottom: 8px;
+    font-size: clamp(0.72rem, 2.2vw, 0.84rem);
+    line-height: 1.42;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .control-bar {
-    gap: 5px;
-    padding: 5px 6px;
-    border-radius: 14px;
+    gap: 8px;
+    padding: 8px 8px;
+    border-radius: 16px;
+  }
+
+  .btn--dock-icon {
+    min-height: 60px;
+    min-width: 60px;
+    padding: 12px 14px;
+  }
+
+  .mode-switch .btn--dock-icon {
+    min-width: 60px;
+    min-height: 60px;
+  }
+
+  .btn__dock-svg {
+    width: 30px;
+    height: 30px;
   }
 
   .tool-sheet {
@@ -1297,6 +1400,7 @@ body {
 
 /* ---------- 旧版 iPad / Android WebView：无 backdrop、无 flex gap 时的降级 ---------- */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+
   .top-panel,
   .sheet-panel,
   .top-panel__summary {
@@ -1313,7 +1417,7 @@ body {
     gap: 0;
   }
 
-  .top-panel__head > * + * {
+  .top-panel__head>*+* {
     margin-left: 14px;
   }
 
@@ -1321,7 +1425,7 @@ body {
     gap: 0;
   }
 
-  .top-panel__actions > * + * {
+  .top-panel__actions>*+* {
     margin-top: 8px;
   }
 
@@ -1329,7 +1433,7 @@ body {
     gap: 0;
   }
 
-  .top-panel__toggle > * + * {
+  .top-panel__toggle>*+* {
     margin-left: 6px;
   }
 
@@ -1337,7 +1441,7 @@ body {
     gap: 0;
   }
 
-  .research-panel__bar > * + * {
+  .research-panel__bar>*+* {
     margin-left: 10px;
   }
 
@@ -1345,7 +1449,7 @@ body {
     gap: 0;
   }
 
-  .research-steps > .research-step {
+  .research-steps>.research-step {
     margin: 0 8px 8px 0;
   }
 
@@ -1353,7 +1457,7 @@ body {
     gap: 0;
   }
 
-  .top-panel__meta > .meta-chip {
+  .top-panel__meta>.meta-chip {
     margin: 0 8px 8px 0;
   }
 
@@ -1361,12 +1465,12 @@ body {
     gap: 0;
   }
 
-  .sheet-panel__bar > * + * {
+  .sheet-panel__bar>*+* {
     margin-left: 6px;
   }
 
   @media (max-width: 900px) {
-    .top-panel__actions > * + * {
+    .top-panel__actions>*+* {
       margin-top: 0;
       margin-left: 8px;
     }
@@ -1375,6 +1479,7 @@ body {
 
 /* 系统开启「减少动态效果」时缩短动画，减轻眩晕并略省 GPU */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
